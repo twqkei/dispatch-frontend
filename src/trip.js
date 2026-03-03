@@ -3,18 +3,41 @@ import { useParams, Link } from "react-router-dom";
 import "./trip.css";
 import { createPortal } from "react-dom";
 
-/* ---------- helpers for time input ---------- */
+const API_BASE = "https://weircheve.pythonanywhere.com/dispatch";
+
 const toTimeInput = (t) => (t ? String(t).slice(0, 5) : "");
 const fromTimeInput = (t) => (t ? `${t}:00` : null);
 
+async function apiFetch(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  const text = await res.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text; // HTML or plain text error
+  }
+
+  if (!res.ok) {
+    const msg =
+      (data && data.detail) ||
+      (typeof data === "string" ? data.slice(0, 200) : "") ||
+      `Request failed: ${res.status}`;
+    throw new Error(msg);
+  }
+
+  return data;
+}
+
 /* ---------- Notion-like picker (WITH search) ---------- */
-function InlinePicker({
-  value,
-  placeholder = "Select",
-  options = [],
-  getTone,
-  onSelect,
-}) {
+function InlinePicker({ value, placeholder = "Select", options = [], getTone, onSelect }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
@@ -142,7 +165,6 @@ function InlinePicker({
             </div>
 
             <div className="picker-list">
-
               {filtered.length === 0 ? (
                 <div className="picker-empty">No matches</div>
               ) : (
@@ -154,9 +176,7 @@ function InlinePicker({
                     <button
                       key={opt}
                       type="button"
-                      className={`picker-item ${
-                        isActive ? "picker-item--active" : ""
-                      }`}
+                      className={`picker-item ${isActive ? "picker-item--active" : ""}`}
                       onMouseEnter={() => setActive(idx)}
                       onClick={() => selectValue(opt)}
                     >
@@ -192,25 +212,43 @@ function Trip() {
     "Samal Campus", "BAC"
   ];
 
-  // Fetch trips by date
+  // Fetch trips by date (LIVE)
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/trips/by_date/?date=${date}`)
-      .then((res) => res.json())
-      .then((data) => setTrips(data));
+    (async () => {
+      try {
+        const data = await apiFetch(`/trips/by_date/?date=${encodeURIComponent(date)}`, {
+          method: "GET",
+          headers: {},
+        });
+        setTrips(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error("Fetch trips by date error:", e);
+        setTrips([]);
+      }
+    })();
   }, [date]);
 
-  // Fetch drivers and vehicles
+  // Fetch drivers + vehicles (LIVE)
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/drivers/")
-      .then((res) => res.json())
-      .then((data) => setDrivers(data));
+    (async () => {
+      try {
+        const d = await apiFetch("/drivers/");
+        setDrivers(Array.isArray(d) ? d : []);
+      } catch (e) {
+        console.error("Fetch drivers error:", e);
+        setDrivers([]);
+      }
 
-    fetch("http://127.0.0.1:8000/api/vehicles/")
-      .then((res) => res.json())
-      .then((data) => setVehicles(data));
+      try {
+        const v = await apiFetch("/vehicles/");
+        setVehicles(Array.isArray(v) ? v : []);
+      } catch (e) {
+        console.error("Fetch vehicles error:", e);
+        setVehicles([]);
+      }
+    })();
   }, []);
 
-  // safer options (unique, no undefined)
   const vehicleOptions = useMemo(
     () => [...new Set(vehicles.map((v) => v.model).filter(Boolean))],
     [vehicles]
@@ -221,7 +259,6 @@ function Trip() {
     [drivers]
   );
 
-  // consistent colors per text
   const toneFromText = (text) => {
     if (!text) return "gray";
     const tones = ["green", "amber", "red", "blue", "indigo", "gray"];
@@ -248,7 +285,7 @@ function Trip() {
     return "gray";
   };
 
-  // PATCH only what changed
+  // PATCH only what changed (LIVE)
   const patchTrip = async (id, patch) => {
     const payload = { ...patch };
 
@@ -256,25 +293,12 @@ function Trip() {
       if (payload[f] === "") payload[f] = null;
     });
 
-    const res = await fetch(`http://127.0.0.1:8000/api/trips/${id}/`, {
+    return apiFetch(`/trips/${id}/`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
-    const text = await res.text();
-    const data = text ? JSON.parse(text) : null;
-
-    if (!res.ok) {
-      console.error("PATCH error payload:", payload);
-      console.error("PATCH error response:", data);
-      throw new Error("PATCH failed");
-    }
-
-    return data;
   };
 
-  // IMPORTANT: functional setTrips so the right row changes every time
   const handleChange = (index, field, value) => {
     setTrips((prev) => {
       const original = prev[index];
@@ -319,23 +343,22 @@ function Trip() {
       date_of_trip: date,
     };
 
-    fetch("http://127.0.0.1:8000/api/trips/", {
+    apiFetch("/trips/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newTrip),
     })
-      .then((res) => res.json())
-      .then((data) => setTrips((prev) => [...prev, data]));
+      .then((data) => setTrips((prev) => [...prev, data]))
+      .catch((e) => console.error("Add trip error:", e));
   };
 
   const deleteTrip = (id) => {
     if (!window.confirm("Delete this trip?")) return;
-    fetch(`http://127.0.0.1:8000/api/trips/${id}/`, { method: "DELETE" }).then(() =>
-      setTrips((prev) => prev.filter((t) => t.id !== id))
-    );
+
+    apiFetch(`/trips/${id}/`, { method: "DELETE" })
+      .then(() => setTrips((prev) => prev.filter((t) => t.id !== id)))
+      .catch((e) => console.error("Delete trip error:", e));
   };
 
-  // Global table filter
   const filteredTrips = useMemo(() => {
     const q = tableQuery.trim().toLowerCase();
     if (!q) return trips;
@@ -382,10 +405,10 @@ function Trip() {
             onChange={(e) => setTableQuery(e.target.value)}
             placeholder="Search"
           />
-  
+
           <button onClick={addRow} className="btn-primary-soft">
-          + Add Trip
-        </button>
+            + Add Trip
+          </button>
         </div>
 
         <div className="table-card__inner">
@@ -415,7 +438,6 @@ function Trip() {
                 </tr>
               ) : (
                 filteredTrips.map((trip) => {
-                  // map back to original index for PATCH handling
                   const i = trips.findIndex((t) => t.id === trip.id);
 
                   return (
