@@ -16,7 +16,7 @@ function Home() {
   }, []);
 
   const fetchTrips = () => {
-    fetch(`${API_BASE}dispatch/trips/`)
+    fetch(`${API_BASE}/trips/`)
       .then((res) => res.json())
       .then((data) => setTripData(data))
       .catch((err) => console.error("Fetch trips error:", err));
