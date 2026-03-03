@@ -5,7 +5,7 @@ import "react-calendar/dist/Calendar.css";
 import "./calendar.css";
 
 // ✅ LIVE backend
-const API_BASE = "https://weircheve.pythonanywhere.com/dispatch";
+const API_BASE = "https://weircheve.pythonanywhere.com";
 
 function Home() {
   const [tripData, setTripData] = useState([]);
