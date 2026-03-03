@@ -12,11 +12,9 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const saveTokens = ({ access, refresh }) => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    sessionStorage.removeItem("access");
-    sessionStorage.removeItem("refresh");
-  };
+  localStorage.setItem("access", access);
+  localStorage.setItem("refresh", refresh);
+};
 
   const handleLogin = async (e) => {
     e.preventDefault();

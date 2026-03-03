@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./calendar.css";
+import { apiFetch } from "./api";
 
 // ✅ LIVE backend
 const API_BASE = "https://weircheve.pythonanywhere.com/dispatch";
@@ -16,10 +17,8 @@ function Home() {
   }, []);
 
   const fetchTrips = () => {
-    fetch(`${API_BASE}/trips/`)
-      .then((res) => res.json())
-      .then((data) => setTripData(data))
-      .catch((err) => console.error("Fetch trips error:", err));
+    apiFetch(`/trips/`)
+      .then(setTripData)
   };
 
   const handleDateClick = (selectedDate) => {
