@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import "./trip.css";
 import { createPortal } from "react-dom";
 
-const API_BASE = "https://weircheve.pythonanywhere.com";
+const API_BASE = "https://weircheve.pythonanywhere.com/";
 
 const toTimeInput = (t) => (t ? String(t).slice(0, 5) : "");
 const fromTimeInput = (t) => (t ? `${t}:00` : null);
