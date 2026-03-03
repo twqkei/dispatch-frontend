@@ -4,6 +4,9 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./calendar.css";
 
+// ✅ LIVE backend
+const API_BASE = "https://weircheve.pythonanywhere.com";
+
 function Home() {
   const [tripData, setTripData] = useState([]);
   const navigate = useNavigate();
@@ -13,9 +16,10 @@ function Home() {
   }, []);
 
   const fetchTrips = () => {
-    fetch("http://127.0.0.1:8000/api/trips/")
-      .then(res => res.json())
-      .then(data => setTripData(data));
+    fetch(`${API_BASE}/dispatch/trips/`)
+      .then((res) => res.json())
+      .then((data) => setTripData(data))
+      .catch((err) => console.error("Fetch trips error:", err));
   };
 
   const handleDateClick = (selectedDate) => {
@@ -30,58 +34,56 @@ function Home() {
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
     const formatted = `${y}-${m}-${d}`;
-    return tripData.filter(t => t.date_of_trip === formatted);
+    return tripData.filter((t) => t.date_of_trip === formatted);
   };
 
   return (
     <div style={{ padding: 10 }}>
-<Calendar
-  onClickDay={handleDateClick}
+      <Calendar
+        onClickDay={handleDateClick}
+        tileContent={({ date, view }) => {
+          if (view === "month") {
+            const trips = getTripsForDate(date);
 
-  tileContent={({ date, view }) => {
-    if (view === "month") {
-      const trips = getTripsForDate(date);
+            if (trips.length > 0) {
+              return (
+                <div className="vehicle-dots">
+                  {trips.map((trip) => (
+                    <span
+                      key={trip.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className={`vehicle-dot ${
+                        trip.availability === "Cancelled" ? "cancelled-trip" : ""
+                      }`}
+                    >
+                      {trip.vehicle_name || trip.vehicle?.model}
+                    </span>
+                  ))}
+                </div>
+              );
+            }
+          }
+          return null;
+        }}
+        tileClassName={({ date, view }) => {
+          if (view !== "month") return null;
 
-      if (trips.length > 0) {
-        return (
-          <div className="vehicle-dots">
-            {trips.map(trip => (
-              <span
-                key={trip.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-                className={`vehicle-dot ${
-                  trip.availability === "Cancelled" ? "cancelled-trip" : ""
-                }`}
-              >
-                {trip.vehicle_name || trip.vehicle?.model}
-              </span>
-            ))}
-          </div>
-        );
-      }
-    }
-  }}
+          const trips = getTripsForDate(date);
+          if (trips.length === 0) return null;
 
-  tileClassName={({ date, view }) => {
-    if (view !== "month") return;
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
 
-    const trips = getTripsForDate(date);
-    if (trips.length === 0) return null;
+          const checkDate = new Date(date);
+          checkDate.setHours(0, 0, 0, 0);
 
-    const today = new Date();
-    today.setHours(0,0,0,0);
-
-    const checkDate = new Date(date);
-    checkDate.setHours(0,0,0,0);
-
-    if (checkDate < today) return "trip-past";
-    if (checkDate > today) return "trip-future";
-    return "trip-today";
-  }}
-/>
-
+          if (checkDate < today) return "trip-past";
+          if (checkDate > today) return "trip-future";
+          return "trip-today";
+        }}
+      />
     </div>
   );
 }
