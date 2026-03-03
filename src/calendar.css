@@ -1,0 +1,56 @@
+/* CALENDAR LAYOUT */
+.react-calendar {
+    width: 100%;
+    border: none;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.vehicle-dots {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.vehicle-dot {
+    background-color: #4caf50;
+    color: white;
+    font-size: 0.6em;
+    padding: 1px 4px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.vehicle-dot.cancelled-trip {
+    background-color: #dc3545 !important;
+}
+
+/* DAYS WITH TRIPS */
+.trip-past {
+    background-color: #ffffff !important;
+    border-radius: 8px;
+    border: 1px solid #adb5bd;
+    opacity: 0.8;
+}
+
+.trip-future {
+    background-color: #d4edda !important;
+    border-radius: 8px;
+    border: 1px solid #198754;
+}
+
+.trip-today {
+    background-color: hsl(62, 79%, 93%) !important;
+    border-radius: 8px;
+    border: 2px solid #0d6efd;
+}
+
+.trip-past:hover,
+.trip-future:hover,
+.trip-today:hover {
+    transform: scale(1.05);
+    transition: 0.2s;
+}
