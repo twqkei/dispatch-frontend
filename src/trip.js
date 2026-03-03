@@ -368,7 +368,7 @@ function Trip() {
           <div className="trip-title">
             <h1>Trips on {date}</h1>
           </div>
-          <Link to="/" className="trip-back">
+          <Link to="/home" className="trip-back">
             ← Back to Calendar
           </Link>
         </div>

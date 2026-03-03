@@ -12,19 +12,10 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const saveTokens = ({ access, refresh }) => {
-    // Clear existing tokens
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
     sessionStorage.removeItem("access");
     sessionStorage.removeItem("refresh");
-
-    if (rememberMe) {
-      localStorage.setItem("access", access);
-      localStorage.setItem("refresh", refresh);
-    } else {
-      sessionStorage.setItem("access", access);
-      sessionStorage.setItem("refresh", refresh);
-    }
   };
 
   const handleLogin = async (e) => {

@@ -141,4 +141,6 @@ body {
 
 .logout {
   margin-left: auto;
+  cursor: pointer;
+  transition: transform 150ms ease;
 }
