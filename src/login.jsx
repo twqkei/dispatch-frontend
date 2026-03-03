@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./login.css";
-const API_BASE = "https://weircheve.pythonanywhere.com";
+const API_BASE = "https://weircheve.pythonanywhere.com/dispatch";
 
 const Login = () => {
   const navigate = useNavigate();
