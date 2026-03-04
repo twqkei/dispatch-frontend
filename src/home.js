@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./calendar.css";
-import API_BASE from "./api";
+import { apiFetch } from "./api";
 
 function Home() {
   const [tripData, setTripData] = useState([]);
@@ -14,7 +14,7 @@ function Home() {
   }, []);
 
   const fetchTrips = () => {
-    fetch(`${API_BASE}/login/`)
+    apiFetch("/trips/")
       .then(setTripData)
   };
 
