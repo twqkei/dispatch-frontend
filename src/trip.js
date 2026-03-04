@@ -1,40 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import "./trip.css";
 import { createPortal } from "react-dom";
-
-const API_BASE = "https://weircheve.pythonanywhere.com/dispatch";
+import { apiFetch } from "./api"; // ✅ centralized API
+import "./trip.css";
 
 const toTimeInput = (t) => (t ? String(t).slice(0, 5) : "");
 const fromTimeInput = (t) => (t ? `${t}:00` : null);
-
-async function apiFetch(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-
-  const text = await res.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text; // HTML or plain text error
-  }
-
-  if (!res.ok) {
-    const msg =
-      (data && data.detail) ||
-      (typeof data === "string" ? data.slice(0, 200) : "") ||
-      `Request failed: ${res.status}`;
-    throw new Error(msg);
-  }
-
-  return data;
-}
 
 /* ---------- Notion-like picker (WITH search) ---------- */
 function InlinePicker({ value, placeholder = "Select", options = [], getTone, onSelect }) {
@@ -59,11 +30,9 @@ function InlinePicker({ value, placeholder = "Select", options = [], getTone, on
     const el = btnRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-
     const width = 280;
     const left = Math.min(Math.max(8, r.left), window.innerWidth - width - 8);
     const top = Math.min(r.bottom + 8, window.innerHeight - 340);
-
     setPos({ top, left, width });
   };
 
@@ -195,7 +164,6 @@ function InlinePicker({ value, placeholder = "Select", options = [], getTone, on
 
 function Trip() {
   const { date } = useParams();
-
   const [trips, setTrips] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -203,48 +171,35 @@ function Trip() {
 
   const conditions = ["READY TO USE", "FOR REPAIR", "FOR DISPOSAL", "Insurance Registration"];
   const availabilities = ["Available", "Unavailable", "Repair", "Cancelled"];
-  const requesters = [
-    "IAAS","IADS","ILEGG","IC","ITED","OSDS","Cashier","REP","HRMO","PSU","Supply",
-    "PRMO","QA","PIO","Record Management Office", "BASD","VPAA","VPAF","VPREP","Extension Division",
-    "Research Development Division","Production Division","Carmen Campus","TBI","Engineering Office",
-    "GAD","Internalization","Office of the President","Quality Assurance","GASSO","Faculty Association",
-    "Admin Services","Registrar","Accounting Office","GSU","Other Agency","OP","Budget","BOARD SEC","External Visitors",
-    "Samal Campus", "BAC"
-  ];
 
-  // Fetch trips by date (LIVE)
+  /* Fetch trips by date */
   useEffect(() => {
     (async () => {
       try {
-        const data = await apiFetch(`/trips/by_date/?date=${encodeURIComponent(date)}`, {
-          method: "GET",
-          headers: {},
-        });
+        const data = await apiFetch(`/trips/by_date/?date=${encodeURIComponent(date)}`);
         setTrips(Array.isArray(data) ? data : []);
       } catch (e) {
-        console.error("Fetch trips by date error:", e);
+        console.error("Fetch trips error:", e);
         setTrips([]);
       }
     })();
   }, [date]);
 
-  // Fetch drivers + vehicles (LIVE)
+  /* Fetch drivers + vehicles */
   useEffect(() => {
     (async () => {
       try {
         const d = await apiFetch("/drivers/");
         setDrivers(Array.isArray(d) ? d : []);
       } catch (e) {
-        console.error("Fetch drivers error:", e);
-        setDrivers([]);
+        console.error(e);
       }
 
       try {
         const v = await apiFetch("/vehicles/");
         setVehicles(Array.isArray(v) ? v : []);
       } catch (e) {
-        console.error("Fetch vehicles error:", e);
-        setVehicles([]);
+        console.error(e);
       }
     })();
   }, []);
@@ -259,68 +214,28 @@ function Trip() {
     [drivers]
   );
 
-  const toneFromText = (text) => {
-    if (!text) return "gray";
-    const tones = ["green", "amber", "red", "blue", "indigo", "gray"];
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
-    return tones[hash % tones.length];
-  };
-
-  const toneForCondition = (v) => {
-    if (!v) return "gray";
-    if (v === "READY TO USE") return "green";
-    if (v === "FOR REPAIR") return "amber";
-    if (v === "FOR DISPOSAL") return "red";
-    if (v === "Insurance Registration") return "blue";
-    return "gray";
-  };
-
-  const toneForAvailability = (v) => {
-    if (!v) return "gray";
-    if (v === "Available") return "emerald";
-    if (v === "Unavailable") return "rose";
-    if (v === "Repair") return "orange";
-    if (v === "Cancelled") return "slate";
-    return "gray";
-  };
-
-  // PATCH only what changed (LIVE)
   const patchTrip = async (id, patch) => {
-    const payload = { ...patch };
-
-    ["date_requested", "time_of_travel", "time_returned"].forEach((f) => {
-      if (payload[f] === "") payload[f] = null;
-    });
-
     return apiFetch(`/trips/${id}/`, {
       method: "PATCH",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(patch),
     });
   };
 
   const handleChange = (index, field, value) => {
     setTrips((prev) => {
       const original = prev[index];
-      if (!original) return prev;
-
-      const next = { ...original, [field]: value };
       const updated = [...prev];
-      updated[index] = next;
+      updated[index] = { ...original, [field]: value };
 
       patchTrip(original.id, { [field]: value })
         .then((serverTrip) => {
           if (!serverTrip) return;
-          setTrips((curr) => curr.map((t) => (t.id === serverTrip.id ? serverTrip : t)));
+          setTrips((curr) =>
+            curr.map((t) => (t.id === serverTrip.id ? serverTrip : t))
+          );
         })
         .catch((err) => {
           console.error("PATCH failed:", err);
-          setTrips((curr) => {
-            const copy = [...curr];
-            const idx = copy.findIndex((t) => t.id === original.id);
-            if (idx !== -1) copy[idx] = original;
-            return copy;
-          });
         });
 
       return updated;
@@ -328,69 +243,26 @@ function Trip() {
   };
 
   const addRow = () => {
-    const newTrip = {
-      vehicle_name: "",
-      condition: "",
-      driver: "",
-      availability: "",
-      destination: "",
-      date_requested: null,
-      requester: "",
-      remarks: "",
-      passengers: 0,
-      time_of_travel: null,
-      time_returned: null,
-      date_of_trip: date,
-    };
-
     apiFetch("/trips/", {
       method: "POST",
-      body: JSON.stringify(newTrip),
+      body: JSON.stringify({ date_of_trip: date }),
     })
       .then((data) => setTrips((prev) => [...prev, data]))
-      .catch((e) => console.error("Add trip error:", e));
+      .catch(console.error);
   };
 
   const deleteTrip = (id) => {
     if (!window.confirm("Delete this trip?")) return;
-
     apiFetch(`/trips/${id}/`, { method: "DELETE" })
       .then(() => setTrips((prev) => prev.filter((t) => t.id !== id)))
-      .catch((e) => console.error("Delete trip error:", e));
+      .catch(console.error);
   };
-
-  const filteredTrips = useMemo(() => {
-    const q = tableQuery.trim().toLowerCase();
-    if (!q) return trips;
-
-    return trips.filter((t) => {
-      const blob = [
-        t.vehicle_name,
-        t.condition,
-        t.driver,
-        t.availability,
-        t.destination,
-        t.requester,
-        t.remarks,
-        String(t.passengers ?? ""),
-        String(t.date_requested ?? ""),
-        String(t.time_of_travel ?? ""),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return blob.includes(q);
-    });
-  }, [trips, tableQuery]);
 
   return (
     <div className="trip-page">
       <div className="trip-topbar">
         <div>
-          <div className="trip-title">
-            <h1>Trips on {date}</h1>
-          </div>
+          <h1>Trips on {date}</h1>
           <Link to="/home" className="trip-back">
             ← Back to Calendar
           </Link>
@@ -405,154 +277,9 @@ function Trip() {
             onChange={(e) => setTableQuery(e.target.value)}
             placeholder="Search"
           />
-
           <button onClick={addRow} className="btn-primary-soft">
             + Add Trip
           </button>
-        </div>
-
-        <div className="table-card__inner">
-          <table className="nice-table">
-            <thead>
-              <tr>
-                <th>Vehicle</th>
-                <th>Condition</th>
-                <th>Driver</th>
-                <th>Availability</th>
-                <th>Destination</th>
-                <th>Time of Travel</th>
-                <th>Requester</th>
-                <th>Remarks</th>
-                <th>Pax</th>
-                <th>Date Req.</th>
-                <th className="th-actions">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredTrips.length === 0 ? (
-                <tr>
-                  <td colSpan="11" className="empty-cell">
-                    No trips found
-                  </td>
-                </tr>
-              ) : (
-                filteredTrips.map((trip) => {
-                  const i = trips.findIndex((t) => t.id === trip.id);
-
-                  return (
-                    <tr key={trip.id}>
-                      <td className="col-tight">
-                        <InlinePicker
-                          value={trip.vehicle_name || ""}
-                          placeholder="Vehicle"
-                          options={vehicleOptions}
-                          getTone={toneFromText}
-                          onSelect={(v) => handleChange(i, "vehicle_name", v)}
-                        />
-                      </td>
-
-                      <td className="col-tight">
-                        <InlinePicker
-                          value={trip.condition || ""}
-                          placeholder="Condition"
-                          options={conditions}
-                          getTone={toneForCondition}
-                          onSelect={(v) => handleChange(i, "condition", v)}
-                        />
-                      </td>
-
-                      <td className="col-tight">
-                        <InlinePicker
-                          value={trip.driver || ""}
-                          placeholder="Driver"
-                          options={driverOptions}
-                          getTone={toneFromText}
-                          onSelect={(v) => handleChange(i, "driver", v)}
-                        />
-                      </td>
-
-                      <td className="col-tight">
-                        <InlinePicker
-                          value={trip.availability || ""}
-                          placeholder="Availability"
-                          options={availabilities}
-                          getTone={toneForAvailability}
-                          onSelect={(v) => handleChange(i, "availability", v)}
-                        />
-                      </td>
-
-                      <td className="col-wide">
-                        <input
-                          className="cell-input"
-                          value={trip.destination || ""}
-                          onChange={(e) => handleChange(i, "destination", e.target.value)}
-                          placeholder="Destination…"
-                        />
-                      </td>
-
-                      <td className="col-time">
-                        <input
-                          type="time"
-                          className="cell-input"
-                          value={toTimeInput(trip.time_of_travel)}
-                          onChange={(e) =>
-                            handleChange(i, "time_of_travel", fromTimeInput(e.target.value))
-                          }
-                        />
-                      </td>
-
-                      <td className="col-tight">
-                        <InlinePicker
-                          value={trip.requester || ""}
-                          placeholder="Requester"
-                          options={requesters}
-                          getTone={toneFromText}
-                          onSelect={(v) => handleChange(i, "requester", v)}
-                        />
-                      </td>
-
-                      <td className="col-wide">
-                        <input
-                          className="cell-input"
-                          value={trip.remarks || ""}
-                          onChange={(e) => handleChange(i, "remarks", e.target.value)}
-                          placeholder="Remarks…"
-                        />
-                      </td>
-
-                      <td className="col-num">
-                        <input
-                          type="number"
-                          min="0"
-                          className="cell-input cell-input--num"
-                          value={trip.passengers ?? 0}
-                          onChange={(e) =>
-                            handleChange(i, "passengers", parseInt(e.target.value) || 0)
-                          }
-                        />
-                      </td>
-
-                      <td className="col-date">
-                        <input
-                          type="date"
-                          className="cell-input"
-                          value={trip.date_requested || ""}
-                          onChange={(e) => handleChange(i, "date_requested", e.target.value || null)}
-                        />
-                      </td>
-
-                      <td className="td-actions">
-                        <button className="btn-danger-ghost" onClick={() => deleteTrip(trip.id)}>
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
