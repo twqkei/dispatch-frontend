@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "./logs.css";
+import API_BASE from "./api";
 
 const months = [
   "January","February","March","April","May","June",
@@ -17,7 +18,7 @@ function Logs() {
   const [selectedWeek, setSelectedWeek] = useState(null);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/trips/")
+    fetch(`${API_BASE}/trips/`)
       .then(res => res.json())
       .then(data => setAllTrips(data));
   }, []);
