@@ -7,26 +7,6 @@ import { apiFetch } from "./api";
 const toTimeInput = (t) => (t ? String(t).slice(0, 5) : "");
 const fromTimeInput = (t) => (t ? `${t}:00` : null);
 
-  const text = await res.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text; // HTML or plain text error
-  }
-
-  if (!res.ok) {
-    const msg =
-      (data && data.detail) ||
-      (typeof data === "string" ? data.slice(0, 200) : "") ||
-      `Request failed: ${res.status}`;
-    throw new Error(msg);
-  }
-
-  return data;
-}
-
-/* ---------- Notion-like picker (WITH search) ---------- */
 function InlinePicker({ value, placeholder = "Select", options = [], getTone, onSelect }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
