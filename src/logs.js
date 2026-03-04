@@ -17,11 +17,14 @@ function Logs() {
   });
   const [selectedWeek, setSelectedWeek] = useState(null);
 
-  useEffect(() => {
-    apiFetch("/trips/")
-      .then(res => res.json())
-      .then(data => setAllTrips(data));
-  }, []);
+useEffect(() => {
+  apiFetch("/trips/")
+    .then(data => setAllTrips(data))
+    .catch(err => {
+      console.error("Failed to fetch trips:", err);
+      setAllTrips([]);
+    });
+}, []);
 
   const matchesSearch = (t, q) => {
     if (!q) return true;
