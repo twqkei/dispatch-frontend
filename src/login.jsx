@@ -17,45 +17,40 @@ const Login = () => {
 };
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    if (!username || !password) {
-      setError("Please fill in both username and password.");
+  if (!username || !password) {
+    setError("Please fill in both username and password.");
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    // apiFetch already returns JSON
+    const data = await apiFetch("/login/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    setIsLoading(false);
+
+    if (!data?.access || !data?.refresh) {
+      setError("Login failed: tokens not returned.");
       return;
     }
 
-    setIsLoading(true);
+    saveTokens({ access: data.access, refresh: data.refresh });
+    navigate("/home");
 
-    try {
-      const response = await apiFetch("/login/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-      setIsLoading(false);
-
-      if (!response.ok) {
-        setError(data?.detail || "Login failed.");
-        return;
-      }
-
-      if (!data?.access || !data?.refresh) {
-        setError("Login failed: tokens not returned.");
-        return;
-      }
-
-      saveTokens({ access: data.access, refresh: data.refresh });
-      navigate("/home");
-
-    } catch (err) {
-      setIsLoading(false);
-      console.error("Login error:", err);
-      setError("Network/server error. Please try again.");
-    }
-  };
+  } catch (err) {
+    setIsLoading(false);
+    console.error("Login error:", err);
+    setError(err.message || "Network/server error. Please try again.");
+  }
+};
 
   return (
  <div className="login-container">
