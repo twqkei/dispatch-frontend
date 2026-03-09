@@ -3,26 +3,15 @@ import { apiFetch } from "./api";
 import "./external.css";
 
 export default function Dashboard() {
-  const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
 
   const loadData = async () => {
-    try {
-      const [vehicleData, driverData] = await Promise.all([
-        apiFetch("/vehicles/"),
-        apiFetch("/drivers/")
-      ]);
-
-      setVehicles(vehicleData);
-      setDrivers(driverData);
-    } catch (error) {
-      console.error("Error loading data:", error);
-    }
+    const d = await apiFetch("/drivers/");
+    setDrivers(d);
   };
 
   useEffect(() => {
     loadData();
-
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -37,22 +26,20 @@ export default function Dashboard() {
 
       <div className="grid">
         {drivers.length > 0 ? (
-          drivers.map((driver) => {
-            const status = getStatusClass(driver.computed_status);
+          drivers.map((d) => {
+            const status = getStatusClass(d.computed_status);
 
             return (
-              <div key={driver.id} className="card">
+              <div key={d.id} className="card">
                 <div className="cardTop">
-                  <div className="cardTitle">{driver.name}</div>
+                  <div className="cardTitle">{d.name}</div>
                   <div className={`status ${status}`}>
                     {status.toUpperCase()}
                   </div>
                 </div>
 
-                {driver.assigned_vehicle && (
-                  <div className="cardMeta">
-                    {driver.assigned_vehicle}
-                  </div>
+                {d.assigned_vehicle && (
+                  <div className="cardMeta">{d.assigned_vehicle}</div>
                 )}
               </div>
             );
