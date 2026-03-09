@@ -1,0 +1,226 @@
+/* =========================
+   PAGE LAYOUT
+========================= */
+
+.page {
+    padding: 20px;
+    background: #f6f7fb;
+    min-height: 100vh;
+}
+
+.pageHeader h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+/* Grid layout used by both pages */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+
+/* =========================
+   CARD
+========================= */
+
+.card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.card:hover {
+    border-color: #d1d5db;
+    transform: translateY(-1px);
+}
+
+/* top row (vehicle name + status etc.) */
+.cardTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+/* =========================
+   TEXT
+========================= */
+
+.cardTitle {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.cardMeta {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.subText {
+    font-size: 12px;
+    color: #374151;
+}
+
+.assistant {
+    color: #9ca3af;
+}
+
+.plate {
+    margin-left: 6px;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+.status {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+
+/* vehicle + driver statuses */
+
+.status.available {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.status.unavailable {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.status.repair {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+.status.ontrip {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.status.busy {
+    background: #fef2f2;
+    color: #dca226;
+}
+
+
+/* =========================
+   EMPTY STATE
+========================= */
+
+.emptyState {
+    padding: 20px;
+    color: #6b7280;
+}
+
+.status.available {
+    background: #e8f7ee;
+    color: #1f7a3d;
+}
+
+.status.reserved {
+    background: #fff4db;
+    color: #b26b00;
+}
+
+.status.unavailable {
+    background: #fdeaea;
+    color: #b42318;
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.summaryCard {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+.summaryTitle {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.summaryValue {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.summaryCard.ready {
+    border-left: 4px solid #22c55e;
+}
+
+.summaryCard.repair {
+    border-left: 4px solid #f59e0b;
+}
+
+.summaryCard.disposal {
+    border-left: 4px solid #ef4444;
+}
+
+.summaryCard.total {
+    border-left: 4px solid #3b82f6;
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.summaryCard {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+.summaryTitle {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.summaryValue {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.summaryCard.ready {
+    border-left: 4px solid #22c55e;
+}
+
+.summaryCard.repair {
+    border-left: 4px solid #f59e0b;
+}
+
+.summaryCard.disposal {
+    border-left: 4px solid #ef4444;
+}
+
+.summaryCard.total {
+    border-left: 4px solid #3b82f6;
+}

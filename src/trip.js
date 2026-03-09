@@ -29,11 +29,9 @@ function InlinePicker({ value, placeholder = "Select", options = [], getTone, on
     const el = btnRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-
     const width = 280;
     const left = Math.min(Math.max(8, r.left), window.innerWidth - width - 8);
     const top = Math.min(r.bottom + 8, window.innerHeight - 340);
-
     setPos({ top, left, width });
   };
 
@@ -42,16 +40,13 @@ function InlinePicker({ value, placeholder = "Select", options = [], getTone, on
       if (!rootRef.current) return;
       if (!rootRef.current.contains(e.target)) setOpen(false);
     };
-
     const onResizeOrScroll = () => {
       if (!open) return;
       computePos();
     };
-
     document.addEventListener("mousedown", onDocClick);
     window.addEventListener("resize", onResizeOrScroll);
     window.addEventListener("scroll", onResizeOrScroll, true);
-
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       window.removeEventListener("resize", onResizeOrScroll);
@@ -78,7 +73,6 @@ function InlinePicker({ value, placeholder = "Select", options = [], getTone, on
 
   const onKeyDown = (e) => {
     if (!open) return;
-
     if (e.key === "Escape") {
       e.preventDefault();
       setOpen(false);
@@ -141,7 +135,6 @@ function InlinePicker({ value, placeholder = "Select", options = [], getTone, on
                 filtered.slice(0, 60).map((opt, idx) => {
                   const optTone = getTone?.(opt) || "gray";
                   const isActive = idx === active;
-
                   return (
                     <button
                       key={opt}
@@ -171,8 +164,7 @@ function Trip() {
   const [vehicles, setVehicles] = useState([]);
   const [tableQuery, setTableQuery] = useState("");
 
-  const conditions = ["READY TO USE", "FOR REPAIR", "FOR DISPOSAL", "Insurance Registration"];
-  const availabilities = ["Available", "Unavailable", "Repair", "Cancelled"];
+  const statuses = ["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"];
   const requesters = [
     "IAAS","IADS","ILEGG","IC","ITED","OSDS","Cashier","REP","HRMO","PSU","Supply",
     "PRMO","QA","PIO","Record Management Office", "BASD","VPAA","VPAF","VPREP","Extension Division",
@@ -182,13 +174,11 @@ function Trip() {
     "Samal Campus", "BAC"
   ];
 
-  // Fetch trips by date (LIVE)
   useEffect(() => {
     (async () => {
       try {
         const data = await apiFetch(`/trips/by_date/?date=${encodeURIComponent(date)}`, {
           method: "GET",
-          headers: {},
         });
         setTrips(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -198,7 +188,6 @@ function Trip() {
     })();
   }, [date]);
 
-  // Fetch drivers + vehicles (LIVE)
   useEffect(() => {
     (async () => {
       try {
@@ -219,16 +208,6 @@ function Trip() {
     })();
   }, []);
 
-  const vehicleOptions = useMemo(
-    () => [...new Set(vehicles.map((v) => v.model).filter(Boolean))],
-    [vehicles]
-  );
-
-  const driverOptions = useMemo(
-    () => [...new Set(drivers.map((d) => d.name).filter(Boolean))],
-    [drivers]
-  );
-
   const toneFromText = (text) => {
     if (!text) return "gray";
     const tones = ["green", "amber", "red", "blue", "indigo", "gray"];
@@ -237,32 +216,33 @@ function Trip() {
     return tones[hash % tones.length];
   };
 
-  const toneForCondition = (v) => {
+  const toneForStatus = (v) => {
     if (!v) return "gray";
-    if (v === "READY TO USE") return "green";
-    if (v === "FOR REPAIR") return "amber";
-    if (v === "FOR DISPOSAL") return "red";
-    if (v === "Insurance Registration") return "blue";
+    if (v === "UPCOMING") return "amber";
+    if (v === "ONGOING") return "green";
+    if (v === "COMPLETED") return "slate";
+    if (v === "CANCELLED") return "rose";
     return "gray";
   };
 
-  const toneForAvailability = (v) => {
-    if (!v) return "gray";
-    if (v === "Available") return "emerald";
-    if (v === "Unavailable") return "rose";
-    if (v === "Repair") return "orange";
-    if (v === "Cancelled") return "slate";
-    return "gray";
-  };
+  const activeTrips = useMemo(() => {
+    return trips.filter((t) => ["UPCOMING", "ONGOING"].includes(t.status));
+  }, [trips]);
 
-  // PATCH only what changed (LIVE)
+  const baseAssignableVehicles = useMemo(() => {
+    return vehicles.filter(
+      (v) =>
+        v.condition === "READY_TO_USE" &&
+        v.availability !== "UNAVAILABLE" &&
+        v.computed_status === "AVAILABLE"
+    );
+  }, [vehicles]);
+
   const patchTrip = async (id, patch) => {
     const payload = { ...patch };
-
-    ["date_requested", "time_of_travel", "time_returned"].forEach((f) => {
+    ["date_requested", "time_of_travel"].forEach((f) => {
       if (payload[f] === "") payload[f] = null;
     });
-
     return apiFetch(`/trips/${id}/`, {
       method: "PATCH",
       body: JSON.stringify(payload),
@@ -297,19 +277,31 @@ function Trip() {
     });
   };
 
+  const handleDriverSelect = (index, name) => {
+    const selectedDriver = drivers.find((d) => d.name === name);
+    if (!selectedDriver) return;
+    handleChange(index, "driver", selectedDriver.id);
+  };
+
+  const handleVehicleSelect = (index, displayValue, optionsForRow) => {
+    const selectedVehicle = optionsForRow.find(
+      (v) => `${v.plate_number} | ${v.model}` === displayValue
+    );
+    if (!selectedVehicle) return;
+    handleChange(index, "vehicle", selectedVehicle.id);
+  };
+
   const addRow = () => {
     const newTrip = {
-      vehicle_name: "",
-      condition: "",
-      driver: "",
-      availability: "",
+      vehicle: null,
+      driver: null,
+      status: "UPCOMING",
       destination: "",
       date_requested: null,
       requester: "",
       remarks: "",
       passengers: 0,
       time_of_travel: null,
-      time_returned: null,
       date_of_trip: date,
     };
 
@@ -323,7 +315,6 @@ function Trip() {
 
   const deleteTrip = (id) => {
     if (!window.confirm("Delete this trip?")) return;
-
     apiFetch(`/trips/${id}/`, { method: "DELETE" })
       .then(() => setTrips((prev) => prev.filter((t) => t.id !== id)))
       .catch((e) => console.error("Delete trip error:", e));
@@ -332,13 +323,11 @@ function Trip() {
   const filteredTrips = useMemo(() => {
     const q = tableQuery.trim().toLowerCase();
     if (!q) return trips;
-
     return trips.filter((t) => {
       const blob = [
         t.vehicle_name,
-        t.condition,
-        t.driver,
-        t.availability,
+        t.driver_name,
+        t.status,
         t.destination,
         t.requester,
         t.remarks,
@@ -349,10 +338,57 @@ function Trip() {
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-
       return blob.includes(q);
     });
   }, [trips, tableQuery]);
+
+  const getAvailableVehiclesForRow = (rowTrip) => {
+    const usedVehicleIds = new Set(
+      activeTrips
+        .filter((t) => t.id !== rowTrip.id && t.vehicle)
+        .map((t) => t.vehicle)
+    );
+
+    const currentVehicle =
+      rowTrip.vehicle != null
+        ? vehicles.find((v) => v.id === rowTrip.vehicle)
+        : null;
+
+    const allowed = baseAssignableVehicles.filter((v) => !usedVehicleIds.has(v.id));
+
+    if (
+      currentVehicle &&
+      !allowed.some((v) => v.id === currentVehicle.id)
+    ) {
+      return [currentVehicle, ...allowed];
+    }
+
+    return allowed;
+  };
+
+  const getAvailableDriversForRow = (rowTrip) => {
+    const usedDriverIds = new Set(
+      activeTrips
+        .filter((t) => t.id !== rowTrip.id && t.driver)
+        .map((t) => t.driver)
+    );
+
+    const currentDriver =
+      rowTrip.driver != null
+        ? drivers.find((d) => d.id === rowTrip.driver)
+        : null;
+
+    const allowed = drivers.filter((d) => !usedDriverIds.has(d.id));
+
+    if (
+      currentDriver &&
+      !allowed.some((d) => d.id === currentDriver.id)
+    ) {
+      return [currentDriver, ...allowed];
+    }
+
+    return allowed;
+  };
 
   return (
     <div className="trip-page">
@@ -375,7 +411,6 @@ function Trip() {
             onChange={(e) => setTableQuery(e.target.value)}
             placeholder="Search"
           />
-
           <button onClick={addRow} className="btn-primary-soft">
             + Add Trip
           </button>
@@ -386,9 +421,8 @@ function Trip() {
             <thead>
               <tr>
                 <th>Vehicle</th>
-                <th>Condition</th>
                 <th>Driver</th>
-                <th>Availability</th>
+                <th>Status</th>
                 <th>Destination</th>
                 <th>Time of Travel</th>
                 <th>Requester</th>
@@ -398,11 +432,10 @@ function Trip() {
                 <th className="th-actions">Action</th>
               </tr>
             </thead>
-
             <tbody>
               {filteredTrips.length === 0 ? (
                 <tr>
-                  <td colSpan="11" className="empty-cell">
+                  <td colSpan="10" className="empty-cell">
                     No trips found
                   </td>
                 </tr>
@@ -410,45 +443,48 @@ function Trip() {
                 filteredTrips.map((trip) => {
                   const i = trips.findIndex((t) => t.id === trip.id);
 
+                  const availableVehiclesForRow = getAvailableVehiclesForRow(trip);
+                  const vehicleOptions = availableVehiclesForRow.map(
+                    (v) => `${v.plate_number} | ${v.model}`
+                  );
+
+                  const availableDriversForRow = getAvailableDriversForRow(trip);
+                  const driverOptions = availableDriversForRow.map((d) => d.name);
+
+                  const currentVehicleDisplay =
+                    trip.plate_number && trip.vehicle_name
+                      ? `${trip.plate_number} | ${trip.vehicle_name}`
+                      : trip.vehicle_name || "";
+
                   return (
                     <tr key={trip.id}>
                       <td className="col-tight">
                         <InlinePicker
-                          value={trip.vehicle_name || ""}
+                          value={currentVehicleDisplay}
                           placeholder="Vehicle"
                           options={vehicleOptions}
                           getTone={toneFromText}
-                          onSelect={(v) => handleChange(i, "vehicle_name", v)}
+                          onSelect={(v) => handleVehicleSelect(i, v, availableVehiclesForRow)}
                         />
                       </td>
 
                       <td className="col-tight">
                         <InlinePicker
-                          value={trip.condition || ""}
-                          placeholder="Condition"
-                          options={conditions}
-                          getTone={toneForCondition}
-                          onSelect={(v) => handleChange(i, "condition", v)}
-                        />
-                      </td>
-
-                      <td className="col-tight">
-                        <InlinePicker
-                          value={trip.driver || ""}
+                          value={trip.driver_name || ""}
                           placeholder="Driver"
                           options={driverOptions}
                           getTone={toneFromText}
-                          onSelect={(v) => handleChange(i, "driver", v)}
+                          onSelect={(v) => handleDriverSelect(i, v)}
                         />
                       </td>
 
                       <td className="col-tight">
                         <InlinePicker
-                          value={trip.availability || ""}
-                          placeholder="Availability"
-                          options={availabilities}
-                          getTone={toneForAvailability}
-                          onSelect={(v) => handleChange(i, "availability", v)}
+                          value={trip.status || ""}
+                          placeholder="Status"
+                          options={statuses}
+                          getTone={toneForStatus}
+                          onSelect={(v) => handleChange(i, "status", v)}
                         />
                       </td>
 
@@ -498,7 +534,7 @@ function Trip() {
                           className="cell-input cell-input--num"
                           value={trip.passengers ?? 0}
                           onChange={(e) =>
-                            handleChange(i, "passengers", parseInt(e.target.value) || 0)
+                            handleChange(i, "passengers", parseInt(e.target.value, 10) || 0)
                           }
                         />
                       </td>

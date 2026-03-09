@@ -1,50 +1,92 @@
-/* CALENDAR LAYOUT */
+/* ================= CALENDAR ================= */
 .react-calendar {
     width: 100%;
     border: none;
     border-radius: 15px;
-    padding: 20px;
+    padding: 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
 }
 
-.vehicle-dots {
+.react-calendar__navigation {
     display: flex;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.react-calendar__navigation button {
+    min-width: 30px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: #111827;
+}
+
+.react-calendar__month-view__weekdays {
+    text-align: center;
+    font-weight: 700;
+    color: #334155;
+}
+
+.react-calendar__tile {
+    border-radius: 10px;
+    padding: 6px 0;
+    text-align: center;
+    font-weight: 500;
+}
+
+.react-calendar__tile--now {
+    background-color: rgba(79, 70, 229, 0.08) !important;
+    border-radius: 10px;
+    border: 2px solid #0d6efd;
+}
+
+.react-calendar__tile:hover {
+    background-color: rgba(79, 70, 229, 0.12);
+    transform: scale(1.05);
+    transition: 0.2s;
+    border-radius: 10px;
+}
+
+.react-calendar abbr {
+    text-decoration: none;
+}
+
+.tripDotWrap {
+    display: flex;
     justify-content: center;
-    gap: 2px;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
-.vehicle-dot {
-    background-color: #4caf50;
-    color: white;
-    font-size: 0.6em;
-    padding: 1px 4px;
-    border-radius: 4px;
-    display: inline-block;
+.tripDot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #46e59d;
+    opacity: 0.9;
 }
 
-.vehicle-dot.cancelled-trip {
-    background-color: #dc3545 !important;
+.tripDot.cancelled {
+    background-color: red;
 }
 
-/* DAYS WITH TRIPS */
 .trip-past {
     background-color: #ffffff !important;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid #adb5bd;
     opacity: 0.8;
 }
 
 .trip-future {
-    background-color: #d4edda !important;
-    border-radius: 8px;
-    border: 1px solid #198754;
+    background-color: rgba(28, 229, 162, 0.08) !important;
+    border-radius: 10px;
 }
 
 .trip-today {
-    background-color: hsl(62, 79%, 93%) !important;
-    border-radius: 8px;
+    background-color: rgba(79, 70, 229, 0.08) !important;
+    border-radius: 10px;
     border: 2px solid #0d6efd;
 }
 
@@ -53,4 +95,320 @@
 .trip-today:hover {
     transform: scale(1.05);
     transition: 0.2s;
+}
+
+.trip-today abbr,
+.trip-future abbr,
+.trip-past abbr {
+    font-weight: 700;
+    color: #111827;
+}
+
+
+/* ================= DASHBOARD ================= */
+.dash {
+    padding: 14px;
+    background: #f3f6fb;
+    min-height: 100vh;
+}
+
+.dashTop {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 14px 16px;
+    box-shadow: 0 10px 30px rgba(14, 26, 58, 0.08);
+    margin-bottom: 14px;
+}
+
+.dashBrand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashLogo {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6b8cff, #86ffd0);
+}
+
+.dashDateNav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.iconBtn {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid #e7ebf3;
+    background: #fff;
+    cursor: pointer;
+    font-size: 18px;
+    color: #334155;
+}
+
+.iconBtn:hover {
+    background: #f6f8ff;
+}
+
+.dashTabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dashTab {
+    border: 1px solid #e7ebf3;
+    background: #fff;
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #475569;
+}
+
+.dashTab.active {
+    background: #111827;
+    color: #fff;
+    border-color: #111827;
+}
+
+.dashMeta {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.dashHeaderDate {
+    font-weight: 700;
+    color: #111827;
+}
+
+
+/* ================= GRID LAYOUT ================= */
+.dashGrid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+    font-size: small;
+}
+
+.dashLeft {
+    display: grid;
+    gap: 12px;
+}
+
+@media (max-width: 980px) {
+    .dashTop {
+        grid-template-columns: 60px 1fr;
+        grid-template-rows: auto auto;
+    }
+
+    .dashMeta {
+        justify-content: flex-start;
+    }
+
+    .dashGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ================= COLUMN ================= */
+.col {
+    border-radius: 18px;
+    padding: 12px;
+}
+
+.colHead {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 6px 10px 6px;
+}
+
+.colTitle {
+    font-weight: 800;
+    color: #111827;
+    flex: 1;
+}
+
+.colBody {
+    display: grid;
+    gap: 8px;
+}
+
+/* LEFT SIDE TRIP GRID */
+.tripColBody {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    align-items: start;
+}
+
+.tripColBody>* {
+    min-width: 0;
+}
+
+.calendarColBody {
+    grid-template-columns: 1fr;
+}
+
+.empty {
+    border: 1px dashed #dbe3f0;
+    background: #fafcff;
+    border-radius: 14px;
+    padding: 14px;
+    color: #64748b;
+}
+
+
+/* ================= CARD ================= */
+.card {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid #eef2f7;
+    border-radius: 14px;
+    transition: 120ms ease;
+}
+
+.card:hover {
+    box-shadow: 0 12px 28px rgba(14, 26, 58, 0.12);
+    transform: translateY(-1px);
+}
+
+.tripCard {
+    padding: 10px 12px;
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.tripCardTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tripCardMain {
+    min-width: 0;
+    flex: 1;
+}
+
+.tripVehicle {
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 3px;
+}
+
+.tripMeta {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+
+/* ================= STATUS BADGE ================= */
+.tripStatusBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.tripStatusDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+
+/* ================= STATUS MENU ================= */
+.statusMenu {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
+    padding: 6px 0;
+    min-width: 220px;
+}
+
+.statusMenuHead {
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.statusMenuItem {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 8px 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.statusMenuItem:hover {
+    background: #f8fafc;
+}
+
+.statusMenuItem.current {
+    background: #f8fafc;
+}
+
+.statusMenuBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 9px;
+    border-radius: 999px;
+}
+
+.statusMenuDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.statusMenuCurrent {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+}
+
+
+/* ================= CALENDAR WRAP ================= */
+.dashCalendarWrap {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(14, 26, 58, 0.08);
+}
+
+
+/* ================= MOBILE ================= */
+@media (max-width: 700px) {
+    .tripColBody {
+        grid-template-columns: 1fr;
+    }
 }

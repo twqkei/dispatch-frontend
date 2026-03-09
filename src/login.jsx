@@ -28,12 +28,12 @@ const Login = () => {
   setIsLoading(true);
 
   try {
-    // apiFetch already returns JSON
     const data = await apiFetch("/login/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
-    });
+    }, { auth: false });
+    
 
     setIsLoading(false);
 

@@ -65,6 +65,10 @@ body {
 
 .topbar {
   position: sticky;
+
+      padding-top: 80px;
+
+  
   top: 0;
   z-index: 10;
   display: flex;
