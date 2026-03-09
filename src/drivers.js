@@ -1,25 +1,33 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "./api";
-import "./external.css"; // unified CSS
+import "./external.css";
 
 export default function Dashboard() {
-  const [setVehicles] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
 
   const loadData = async () => {
-    const v = await apiFetch("/vehicles/");
-    const d = await apiFetch("/drivers/");
-    setVehicles(v);
-    setDrivers(d);
+    try {
+      const [vehicleData, driverData] = await Promise.all([
+        apiFetch("/vehicles/"),
+        apiFetch("/drivers/")
+      ]);
+
+      setVehicles(vehicleData);
+      setDrivers(driverData);
+    } catch (error) {
+      console.error("Error loading data:", error);
+    }
   };
 
   useEffect(() => {
     loadData();
+
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusClass = (status) => (status ? status.toLowerCase() : "available");
+  const getStatusClass = (status = "AVAILABLE") => status.toLowerCase();
 
   return (
     <div className="page">
@@ -29,18 +37,22 @@ export default function Dashboard() {
 
       <div className="grid">
         {drivers.length > 0 ? (
-          drivers.map((d) => {
-            const status = getStatusClass(d.computed_status || "AVAILABLE");
+          drivers.map((driver) => {
+            const status = getStatusClass(driver.computed_status);
 
             return (
-              <div key={d.id} className="card">
+              <div key={driver.id} className="card">
                 <div className="cardTop">
-                  <div className="cardTitle">{d.name}</div>
-                  <div className={`status ${status}`}>{status.toUpperCase()}</div>
+                  <div className="cardTitle">{driver.name}</div>
+                  <div className={`status ${status}`}>
+                    {status.toUpperCase()}
+                  </div>
                 </div>
 
-                {d.assigned_vehicle && (
-                  <div className="cardMeta">{d.assigned_vehicle}</div>
+                {driver.assigned_vehicle && (
+                  <div className="cardMeta">
+                    {driver.assigned_vehicle}
+                  </div>
                 )}
               </div>
             );
