@@ -1,7 +1,7 @@
 const API_BASE =
   process.env.NODE_ENV === "development"
     ? "http://127.0.0.1:8000/dispatch"
-    : "https://weircheveK.pythonanywhere.com/dispatch";
+    : "https://weircheve.pythonanywhere.com/dispatch";
 
 export async function apiFetch(path, options = {}, { auth = true } = {}) {
   const headers = {
