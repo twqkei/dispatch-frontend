@@ -3,7 +3,7 @@ import { apiFetch } from "./api";
 import "./external.css"; // unified CSS
 
 export default function Dashboard() {
-  const [vehicles, setVehicles] = useState([]);
+  const [setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
 
   const loadData = async () => {
