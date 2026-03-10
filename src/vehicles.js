@@ -3,29 +3,16 @@ import { apiFetch } from "./api";
 import "./external.css";
 
 function VehicleCard({ vehicle, onConditionChange }) {
-  const [menu, setMenu] = useState({
-    visible: false,
-    x: 0,
-    y: 0,
-  });
+  const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
+  const conditionOptions = ["READY_TO_USE", "FOR_REPAIR", "FOR_DISPOSAL"];
 
-  const conditionOptions = [
-    "READY_TO_USE",
-    "FOR_REPAIR",
-    "FOR_DISPOSAL",
-  ];
-
-  const closeMenu = useCallback(() => {
-    setMenu((prev) => ({ ...prev, visible: false }));
-  }, []);
+  const closeMenu = useCallback(() => setMenu((prev) => ({ ...prev, visible: false })), []);
 
   useEffect(() => {
     if (!menu.visible) return;
 
     const handleClick = () => closeMenu();
-    const handleEscape = (e) => {
-      if (e.key === "Escape") closeMenu();
-    };
+    const handleEscape = (e) => e.key === "Escape" && closeMenu();
 
     window.addEventListener("click", handleClick);
     window.addEventListener("keydown", handleEscape);
@@ -42,19 +29,11 @@ function VehicleCard({ vehicle, onConditionChange }) {
 
   const handleRightClick = (e) => {
     e.preventDefault();
-    setMenu({
-      visible: true,
-      x: e.clientX,
-      y: e.clientY,
-    });
+    setMenu({ visible: true, x: e.clientX, y: e.clientY });
   };
 
-  const status = (vehicle.computed_status || "AVAILABLE").toLowerCase();
-
-  const formatCondition = (condition) => {
-    if (!condition) return "Unknown";
-    return condition.replaceAll("_", " ");
-  };
+  const status = vehicle.is_available_today ? "available" : "unavailable";
+  const formatCondition = (c) => (c ? c.replaceAll("_", " ") : "Unknown");
 
   return (
     <>
@@ -68,12 +47,8 @@ function VehicleCard({ vehicle, onConditionChange }) {
 
         <div className="cardMeta">
           <div>{vehicle.driver_name || "No driver"}</div>
-          {vehicle.assistant_driver_name && (
-            <div className="assistant">{vehicle.assistant_driver_name}</div>
-          )}
-          <div className="condition">
-            Condition: {formatCondition(vehicle.condition)}
-          </div>
+          {vehicle.assistant_driver_name && <div className="assistant">{vehicle.assistant_driver_name}</div>}
+          <div className="condition">Condition: {formatCondition(vehicle.condition)}</div>
         </div>
       </div>
 
@@ -132,25 +107,26 @@ function VehicleCard({ vehicle, onConditionChange }) {
   );
 }
 
-export default function Vehicles() {
+export default function Vehicles({ selectedDate }) {
   const [vehicles, setVehicles] = useState([]);
 
-  const loadVehicles = async () => {
-    const data = await apiFetch("/vehicles/");
+  const loadVehicles = async (date) => {
+    if (!date) return;
+    const data = await apiFetch(`/vehicles/by_date/?date=${date}`);
     const sorted = [...data].sort((a, b) => {
-      const order = { available: 1, reserved: 2, unavailable: 3 };
-      const statusA = (a.computed_status || "AVAILABLE").toLowerCase();
-      const statusB = (b.computed_status || "AVAILABLE").toLowerCase();
+      const order = { available: 1, unavailable: 2 };
+      const statusA = a.is_available_today ? "available" : "unavailable";
+      const statusB = b.is_available_today ? "available" : "unavailable";
       return (order[statusA] || 99) - (order[statusB] || 99);
     });
     setVehicles(sorted);
   };
 
   useEffect(() => {
-    loadVehicles();
-    const interval = setInterval(loadVehicles, 5000);
+    loadVehicles(selectedDate);
+    const interval = setInterval(() => loadVehicles(selectedDate), 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedDate]);
 
   const conditionSummary = useMemo(() => {
     return vehicles.reduce(
@@ -158,7 +134,6 @@ export default function Vehicles() {
         if (v.condition === "READY_TO_USE") acc.ready += 1;
         else if (v.condition === "FOR_REPAIR") acc.repair += 1;
         else if (v.condition === "FOR_DISPOSAL") acc.disposal += 1;
-
         acc.total += 1;
         return acc;
       },
@@ -167,43 +142,31 @@ export default function Vehicles() {
   }, [vehicles]);
 
   const handleConditionChange = async (vehicleId, newCondition) => {
-    const previousVehicles = vehicles;
+    const previousVehicles = [...vehicles];
 
     const newAvailability =
-      newCondition === "FOR_REPAIR" || newCondition === "FOR_DISPOSAL"
-        ? "UNAVAILABLE"
-        : "AVAILABLE";
+      newCondition === "FOR_REPAIR" || newCondition === "FOR_DISPOSAL" ? "UNAVAILABLE" : "AVAILABLE";
 
     setVehicles((prev) =>
       prev.map((v) =>
-        v.id === vehicleId
-          ? {
-              ...v,
-              condition: newCondition,
-              availability: newAvailability,
-            }
-          : v
+        v.id === vehicleId ? { ...v, condition: newCondition, availability: newAvailability } : v
       )
     );
 
     try {
       await apiFetch(`/vehicles/${vehicleId}/`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          condition: newCondition,
-          availability: newAvailability,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ condition: newCondition, availability: newAvailability }),
       });
-
-      loadVehicles();
+      loadVehicles(selectedDate);
     } catch (error) {
       console.error("Failed to update vehicle condition:", error);
       setVehicles(previousVehicles);
     }
   };
+
+  const availableVehicles = vehicles.filter((v) => v.is_available_today && v.condition === "READY_TO_USE");
 
   return (
     <div className="page">
@@ -216,17 +179,14 @@ export default function Vehicles() {
           <div className="summaryTitle">Ready to Use</div>
           <div className="summaryValue">{conditionSummary.ready}</div>
         </div>
-
         <div className="summaryCard repair">
           <div className="summaryTitle">For Repair</div>
           <div className="summaryValue">{conditionSummary.repair}</div>
         </div>
-
         <div className="summaryCard disposal">
           <div className="summaryTitle">For Disposal</div>
           <div className="summaryValue">{conditionSummary.disposal}</div>
         </div>
-
         <div className="summaryCard total">
           <div className="summaryTitle">Total Vehicles</div>
           <div className="summaryValue">{conditionSummary.total}</div>
@@ -234,16 +194,12 @@ export default function Vehicles() {
       </div>
 
       <div className="grid">
-        {vehicles.length ? (
-          vehicles.map((v) => (
-            <VehicleCard
-              key={v.id}
-              vehicle={v}
-              onConditionChange={handleConditionChange}
-            />
+        {availableVehicles.length ? (
+          availableVehicles.map((v) => (
+            <VehicleCard key={v.id} vehicle={v} onConditionChange={handleConditionChange} />
           ))
         ) : (
-          <div className="emptyState">No vehicles found</div>
+          <div className="emptyState">No vehicles available on this date</div>
         )}
       </div>
     </div>
