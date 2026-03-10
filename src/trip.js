@@ -222,13 +222,30 @@ function Trip() {
     return "gray";
   };
 
-  const activeTrips = useMemo(() => trips.filter((t) => ["UPCOMING","ONGOING"].includes(t.status)), [trips]);
-  const baseAssignableVehicles = useMemo(() => vehicles.filter((v) => v.condition === "READY_TO_USE" && v.availability !== "UNAVAILABLE" && v.computed_status === "AVAILABLE"), [vehicles]);
+  const activeTrips = useMemo(
+    () => trips.filter((t) => ["UPCOMING", "ONGOING"].includes(t.status)),
+    [trips]
+  );
+
+  const baseAssignableVehicles = useMemo(
+    () =>
+      vehicles.filter(
+        (v) =>
+          v.condition === "READY_TO_USE" &&
+          v.availability !== "UNAVAILABLE"
+      ),
+    [vehicles]
+  );
 
   const patchTrip = async (id, patch) => {
     const payload = { ...patch };
-    ["date_requested", "time_of_travel"].forEach((f) => { if (payload[f] === "") payload[f] = null; });
-    return apiFetch(`/trips/${id}/`, { method: "PATCH", body: JSON.stringify(payload) });
+    ["date_requested", "time_of_travel"].forEach((f) => {
+      if (payload[f] === "") payload[f] = null;
+    });
+    return apiFetch(`/trips/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
   };
 
   const handleChange = (index, field, value) => {
@@ -258,52 +275,82 @@ function Trip() {
     });
   };
 
-  const handleDriverSelect = (index, name) => {
-    const selectedDriver = drivers.find((d) => d.name === name);
+  const handleDriverSelect = (index, name, optionsForRow) => {
+    const selectedDriver = optionsForRow.find((d) => d.name === name);
     if (!selectedDriver) return;
     handleChange(index, "driver", selectedDriver.id);
   };
 
   const handleVehicleSelect = (index, displayValue, optionsForRow) => {
-    const selectedVehicle = optionsForRow.find((v) => `${v.plate_number} | ${v.model}` === displayValue);
+    const selectedVehicle = optionsForRow.find(
+      (v) => `${v.plate_number} | ${v.model}` === displayValue
+    );
     if (!selectedVehicle) return;
     handleChange(index, "vehicle", selectedVehicle.id);
   };
 
   const addRow = () => {
-    const newTrip = { vehicle:null, driver:null, status:"UPCOMING", destination:"", date_requested:null, requester:"", remarks:"", passengers:0, time_of_travel:null, date_of_trip:date };
-    apiFetch("/trips/", { method:"POST", body:JSON.stringify(newTrip) })
-      .then((data) => setTrips((prev) => [...prev,data]))
+    const newTrip = {
+      vehicle: null,
+      driver: null,
+      status: "UPCOMING",
+      destination: "",
+      date_requested: null,
+      requester: "",
+      remarks: "",
+      passengers: 0,
+      time_of_travel: null,
+      date_of_trip: date,
+    };
+    apiFetch("/trips/", { method: "POST", body: JSON.stringify(newTrip) })
+      .then((data) => setTrips((prev) => [...prev, data]))
       .catch((e) => console.error("Add trip error:", e));
   };
 
   const deleteTrip = (id) => {
     if (!window.confirm("Delete this trip?")) return;
-    apiFetch(`/trips/${id}/`, { method:"DELETE" })
-      .then(() => setTrips((prev) => prev.filter((t)=>t.id!==id)))
+    apiFetch(`/trips/${id}/`, { method: "DELETE" })
+      .then(() => setTrips((prev) => prev.filter((t) => t.id !== id)))
       .catch((e) => console.error("Delete trip error:", e));
   };
 
   const filteredTrips = useMemo(() => {
     const q = tableQuery.trim().toLowerCase();
     if (!q) return trips;
-    return trips.filter((t)=>{
-      const blob=[t.vehicle_name, t.driver_name, t.status, t.destination, t.requester, t.remarks, String(t.passengers??""), String(t.date_requested??""), String(t.time_of_travel??"")].filter(Boolean).join(" ").toLowerCase();
+    return trips.filter((t) => {
+      const blob = [
+        t.vehicle_name,
+        t.driver_name,
+        t.status,
+        t.destination,
+        t.requester,
+        t.remarks,
+        String(t.passengers ?? ""),
+        String(t.date_requested ?? ""),
+        String(t.time_of_travel ?? "")
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
       return blob.includes(q);
     });
   }, [trips, tableQuery]);
 
-  // ✅ FIXED: availability check only for the same date
   const getAvailableVehiclesForRow = (rowTrip) => {
     const usedVehicleIds = new Set(
-      activeTrips.filter((t) => t.id !== rowTrip.id && t.vehicle && t.date_of_trip === rowTrip.date_of_trip).map((t) => t.vehicle)
+      activeTrips
+        .filter((t) => t.id !== rowTrip.id && t.vehicle)
+        .map((t) => t.vehicle)
     );
 
-    const currentVehicle = rowTrip.vehicle != null ? vehicles.find((v) => v.id === rowTrip.vehicle) : null;
+    const currentVehicle =
+      rowTrip.vehicle != null
+        ? vehicles.find((v) => v.id === rowTrip.vehicle)
+        : null;
 
     const allowed = baseAssignableVehicles.filter((v) => !usedVehicleIds.has(v.id));
 
-    if (currentVehicle && !allowed.some((v)=>v.id===currentVehicle.id)) {
+    if (currentVehicle && !allowed.some((v) => v.id === currentVehicle.id)) {
       return [currentVehicle, ...allowed];
     }
 
@@ -312,14 +359,19 @@ function Trip() {
 
   const getAvailableDriversForRow = (rowTrip) => {
     const usedDriverIds = new Set(
-      activeTrips.filter((t) => t.id !== rowTrip.id && t.driver && t.date_of_trip === rowTrip.date_of_trip).map((t) => t.driver)
+      activeTrips
+        .filter((t) => t.id !== rowTrip.id && t.driver)
+        .map((t) => t.driver)
     );
 
-    const currentDriver = rowTrip.driver != null ? drivers.find((d) => d.id === rowTrip.driver) : null;
+    const currentDriver =
+      rowTrip.driver != null
+        ? drivers.find((d) => d.id === rowTrip.driver)
+        : null;
 
     const allowed = drivers.filter((d) => !usedDriverIds.has(d.id));
 
-    if (currentDriver && !allowed.some((d)=>d.id===currentDriver.id)) {
+    if (currentDriver && !allowed.some((d) => d.id === currentDriver.id)) {
       return [currentDriver, ...allowed];
     }
 
@@ -337,7 +389,12 @@ function Trip() {
 
       <div className="table-card">
         <div className="table-toolbar">
-          <input className="table-search" value={tableQuery} onChange={(e)=>setTableQuery(e.target.value)} placeholder="Search" />
+          <input
+            className="table-search"
+            value={tableQuery}
+            onChange={(e) => setTableQuery(e.target.value)}
+            placeholder="Search"
+          />
           <button onClick={addRow} className="btn-primary-soft">+ Add Trip</button>
         </div>
 
@@ -358,51 +415,124 @@ function Trip() {
               </tr>
             </thead>
             <tbody>
-              {filteredTrips.length===0 ? (
-                <tr><td colSpan="10" className="empty-cell">No trips found</td></tr>
-              ) : filteredTrips.map((trip)=>{
-                const i=trips.findIndex((t)=>t.id===trip.id);
-                const availableVehiclesForRow = getAvailableVehiclesForRow(trip);
-                const vehicleOptions = availableVehiclesForRow.map(v=>`${v.plate_number} | ${v.model}`);
-                const availableDriversForRow = getAvailableDriversForRow(trip);
-                const driverOptions = availableDriversForRow.map(d=>d.name);
-                const currentVehicleDisplay = trip.plate_number && trip.vehicle_name ? `${trip.plate_number} | ${trip.vehicle_name}` : trip.vehicle_name || "";
+              {filteredTrips.length === 0 ? (
+                <tr>
+                  <td colSpan="10" className="empty-cell">No trips found</td>
+                </tr>
+              ) : (
+                filteredTrips.map((trip) => {
+                  const i = trips.findIndex((t) => t.id === trip.id);
 
-                return (
-                  <tr key={trip.id}>
-                    <td className="col-tight">
-                      <InlinePicker value={currentVehicleDisplay} placeholder="Vehicle" options={vehicleOptions} getTone={toneFromText} onSelect={(v)=>handleVehicleSelect(i,v,availableVehiclesForRow)} />
-                    </td>
-                    <td className="col-tight">
-                      <InlinePicker value={trip.driver_name||""} placeholder="Driver" options={driverOptions} getTone={toneFromText} onSelect={(v)=>handleDriverSelect(i,v)} />
-                    </td>
-                    <td className="col-tight">
-                      <InlinePicker value={trip.status||""} placeholder="Status" options={statuses} getTone={toneForStatus} onSelect={(v)=>handleChange(i,"status",v)} />
-                    </td>
-                    <td className="col-wide">
-                      <input className="cell-input" value={trip.destination||""} onChange={(e)=>handleChange(i,"destination",e.target.value)} placeholder="Destination…" />
-                    </td>
-                    <td className="col-time">
-                      <input type="time" className="cell-input" value={toTimeInput(trip.time_of_travel)} onChange={(e)=>handleChange(i,"time_of_travel",fromTimeInput(e.target.value))} />
-                    </td>
-                    <td className="col-tight">
-                      <InlinePicker value={trip.requester||""} placeholder="Requester" options={requesters} getTone={toneFromText} onSelect={(v)=>handleChange(i,"requester",v)} />
-                    </td>
-                    <td className="col-wide">
-                      <input className="cell-input" value={trip.remarks||""} onChange={(e)=>handleChange(i,"remarks",e.target.value)} placeholder="Remarks…" />
-                    </td>
-                    <td className="col-num">
-                      <input type="number" min="0" className="cell-input cell-input--num" value={trip.passengers??0} onChange={(e)=>handleChange(i,"passengers",parseInt(e.target.value,10)||0)} />
-                    </td>
-                    <td className="col-date">
-                      <input type="date" className="cell-input" value={trip.date_requested||""} onChange={(e)=>handleChange(i,"date_requested",e.target.value||null)} />
-                    </td>
-                    <td className="td-actions">
-                      <button className="btn-danger-ghost" onClick={()=>deleteTrip(trip.id)}>Delete</button>
-                    </td>
-                  </tr>
-                );
-              })}
+                  const availableVehiclesForRow = getAvailableVehiclesForRow(trip);
+                  const vehicleOptions = availableVehiclesForRow.map(
+                    (v) => `${v.plate_number} | ${v.model}`
+                  );
+
+                  const availableDriversForRow = getAvailableDriversForRow(trip);
+                  const driverOptions = availableDriversForRow.map((d) => d.name);
+
+                  const currentVehicleDisplay =
+                    trip.plate_number && trip.vehicle_name
+                      ? `${trip.plate_number} | ${trip.vehicle_name}`
+                      : trip.vehicle_name || "";
+
+                  return (
+                    <tr key={trip.id}>
+                      <td className="col-tight">
+                        <InlinePicker
+                          value={currentVehicleDisplay}
+                          placeholder="Vehicle"
+                          options={vehicleOptions}
+                          getTone={toneFromText}
+                          onSelect={(v) => handleVehicleSelect(i, v, availableVehiclesForRow)}
+                        />
+                      </td>
+
+                      <td className="col-tight">
+                        <InlinePicker
+                          value={trip.driver_name || ""}
+                          placeholder="Driver"
+                          options={driverOptions}
+                          getTone={toneFromText}
+                          onSelect={(v) => handleDriverSelect(i, v, availableDriversForRow)}
+                        />
+                      </td>
+
+                      <td className="col-tight">
+                        <InlinePicker
+                          value={trip.status || ""}
+                          placeholder="Status"
+                          options={statuses}
+                          getTone={toneForStatus}
+                          onSelect={(v) => handleChange(i, "status", v)}
+                        />
+                      </td>
+
+                      <td className="col-wide">
+                        <input
+                          className="cell-input"
+                          value={trip.destination || ""}
+                          onChange={(e) => handleChange(i, "destination", e.target.value)}
+                          placeholder="Destination…"
+                        />
+                      </td>
+
+                      <td className="col-time">
+                        <input
+                          type="time"
+                          className="cell-input"
+                          value={toTimeInput(trip.time_of_travel)}
+                          onChange={(e) => handleChange(i, "time_of_travel", fromTimeInput(e.target.value))}
+                        />
+                      </td>
+
+                      <td className="col-tight">
+                        <InlinePicker
+                          value={trip.requester || ""}
+                          placeholder="Requester"
+                          options={requesters}
+                          getTone={toneFromText}
+                          onSelect={(v) => handleChange(i, "requester", v)}
+                        />
+                      </td>
+
+                      <td className="col-wide">
+                        <input
+                          className="cell-input"
+                          value={trip.remarks || ""}
+                          onChange={(e) => handleChange(i, "remarks", e.target.value)}
+                          placeholder="Remarks…"
+                        />
+                      </td>
+
+                      <td className="col-num">
+                        <input
+                          type="number"
+                          min="0"
+                          className="cell-input cell-input--num"
+                          value={trip.passengers ?? 0}
+                          onChange={(e) => handleChange(i, "passengers", parseInt(e.target.value, 10) || 0)}
+                        />
+                      </td>
+
+                      <td className="col-date">
+                        <input
+                          type="date"
+                          className="cell-input"
+                          value={trip.date_requested || ""}
+                          onChange={(e) => handleChange(i, "date_requested", e.target.value || null)}
+                        />
+                      </td>
+
+                      <td className="td-actions">
+                        <button className="btn-danger-ghost" onClick={() => deleteTrip(trip.id)}>
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
