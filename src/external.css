@@ -388,3 +388,27 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+.conditionTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.conditionTable td,
+.conditionTable th {
+    border: 1px solid #e5e7eb;
+    height: 28px;
+    text-align: center;
+}
+
+.cell.ready {
+    background: #22c55e;
+}
+
+.cell.repair {
+    background: #ef4444;
+}
+
+.cell.disposal {
+    background: #f97316;
+}

@@ -90,7 +90,7 @@ function InlinePicker({ value, placeholder = "Select", options = [], getTone, on
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      const picked = filtered[active];
+      const picked = filtered[active] || q;
       if (picked) selectValue(picked);
     }
   };
@@ -130,7 +130,12 @@ function InlinePicker({ value, placeholder = "Select", options = [], getTone, on
 
             <div className="picker-list">
               {filtered.length === 0 ? (
-                <div className="picker-empty">No matches</div>
+                <button
+                  className="picker-item picker-item--active"
+                  onClick={() => selectValue(q)}
+                >
+                  ➕ Add "{q}"
+                </button>
               ) : (
                 filtered.slice(0, 60).map((opt, idx) => {
                   const optTone = getTone?.(opt) || "gray";
@@ -163,10 +168,12 @@ function Trip() {
   const [vehicles, setVehicles] = useState([]);
   const [tableQuery, setTableQuery] = useState("");
 
+  const saveTimeout = useRef({});
+
   const statuses = ["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"];
   const requesters = [
     "IAAS","IADS","ILEGG","IC","ITED","OSDS","Cashier","REP","HRMO","PSU","Supply",
-    "PRMO","QA","PIO","Record Management Office", "BASD","VPAA","VPAF","VPREP","Extension Division",
+    "PRMO","QA","PIO","Record Management Office","BASD","VPAA","VPAF","VPREP","Extension Division",
     "Research Development Division","Production Division","Carmen Campus","TBI","Engineering Office",
     "GAD","Internalization","Office of the President","Quality Assurance","GASSO","Faculty Association",
     "Admin Services","Registrar","Accounting Office","GSU","Other Agency","OP","Budget","BOARD SEC","External Visitors",
@@ -250,29 +257,19 @@ function Trip() {
 
   const handleChange = (index, field, value) => {
     setTrips((prev) => {
-      const original = prev[index];
-      if (!original) return prev;
-      const next = { ...original, [field]: value };
-      const updated = [...prev];
-      updated[index] = next;
-
-      patchTrip(original.id, { [field]: value })
-        .then((serverTrip) => {
-          if (!serverTrip) return;
-          setTrips((curr) => curr.map((t) => (t.id === serverTrip.id ? serverTrip : t)));
-        })
-        .catch((err) => {
-          console.error("PATCH failed:", err);
-          setTrips((curr) => {
-            const copy = [...curr];
-            const idx = copy.findIndex((t) => t.id === original.id);
-            if (idx !== -1) copy[idx] = original;
-            return copy;
-          });
-        });
-
-      return updated;
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
     });
+
+    const trip = trips[index];
+    if (!trip) return;
+
+    clearTimeout(saveTimeout.current[trip.id]);
+
+    saveTimeout.current[trip.id] = setTimeout(() => {
+      patchTrip(trip.id, { [field]: value }).catch(console.error);
+    }, 600);
   };
 
   const handleDriverSelect = (index, name, optionsForRow) => {
