@@ -428,11 +428,8 @@ function Trip() {
                   const availableDriversForRow = getAvailableDriversForRow(trip);
                   const driverOptions = availableDriversForRow.map((d) => d.name);
 
-                  const currentVehicleDisplay =
-                    trip.plate_number && trip.vehicle_name
-                      ? `${trip.plate_number} | ${trip.vehicle_name}`
-                      : trip.vehicle_name || "";
-
+              const currentVehicleDisplay = trip.vehicle_name || "";
+              
                   return (
                     <tr key={trip.id}>
                       <td className="col-tight">
