@@ -429,7 +429,7 @@ function Trip() {
                   const driverOptions = availableDriversForRow.map((d) => d.name);
 
               const currentVehicleDisplay = trip.vehicle_name || "";
-              
+
                   return (
                     <tr key={trip.id}>
                       <td className="col-tight">
@@ -464,7 +464,7 @@ function Trip() {
 
                       <td className="col-wide">
                         <input
-                          className="cell-input"
+                          className="cell-input cell-input--textarea"
                           value={trip.destination || ""}
                           onChange={(e) => handleChange(i, "destination", e.target.value)}
                           placeholder="Destination…"
@@ -492,7 +492,7 @@ function Trip() {
 
                       <td className="col-wide">
                         <input
-                          className="cell-input"
+                          className="cell-inputs cell-input--textarea"
                           value={trip.remarks || ""}
                           onChange={(e) => handleChange(i, "remarks", e.target.value)}
                           placeholder="Remarks…"
