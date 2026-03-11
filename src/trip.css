@@ -186,20 +186,28 @@
 
 .cell-input--textarea {
     width: 100%;
-    min-height: 36px;
-    /* adjusts initial height */
-    max-height: 120px;
-    /* optional: limit how tall it grows */
-    resize: vertical;
-    /* allow user to manually resize */
-    overflow: auto;
-    /* scroll if content exceeds max height */
+    min-height: 32px;
+    max-height: 140px;
+
+    resize: none;
+    overflow: hidden;
+
     border: 1px solid transparent;
     background: transparent;
     padding: 6px 8px;
     font-size: 12.5px;
     border-radius: 10px;
-    transition: all 0.15s ease;
+
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    line-height: 1.4;
+}
+
+.nice-table tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
 }
 
 .cell-input--textarea:hover {

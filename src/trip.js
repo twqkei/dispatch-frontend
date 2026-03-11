@@ -463,7 +463,7 @@ function Trip() {
                       </td>
 
                       <td className="col-wide">
-                        <input
+                        <textarea
                           className="cell-input cell-input--textarea"
                           value={trip.destination || ""}
                           onChange={(e) => handleChange(i, "destination", e.target.value)}
@@ -491,7 +491,7 @@ function Trip() {
                       </td>
 
                       <td className="col-wide">
-                        <input
+                        <textarea
                           className="cell-inputs cell-input--textarea"
                           value={trip.remarks || ""}
                           onChange={(e) => handleChange(i, "remarks", e.target.value)}
