@@ -184,22 +184,21 @@
     text-align: right;
 }
 
-/* NEW: multiline textarea for long text fields like destination & remarks */
 .cell-input--textarea {
     width: 100%;
-    min-height: 40px;
-    max-height: 200px;
+    min-height: 36px;
+    /* adjusts initial height */
+    max-height: 120px;
+    /* optional: limit how tall it grows */
     resize: vertical;
+    /* allow user to manually resize */
     overflow: auto;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    padding: 6px 8px;
-    box-sizing: border-box;
-    font-size: 12.5px;
-    line-height: 1.4;
-    border-radius: 10px;
+    /* scroll if content exceeds max height */
     border: 1px solid transparent;
     background: transparent;
+    padding: 6px 8px;
+    font-size: 12.5px;
+    border-radius: 10px;
     transition: all 0.15s ease;
 }
 
@@ -208,11 +207,11 @@
 }
 
 .cell-input--textarea:focus {
+    outline: none;
     border: 1px solid #3b82f6;
     background: white;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
-
 /* Empty row */
 .empty-cell {
     text-align: center;
