@@ -298,14 +298,14 @@ function Trip() {
 };
   const handleVehicleSelect = (index, displayValue, optionsForRow) => {
   const selectedVehicle = optionsForRow.find(
-    (v) => `${v.plate_number} | ${v.model}` === displayValue
+    (v) => v.model === displayValue
   );
   if (!selectedVehicle) return;
 
   const trip = trips[index];
   if (!trip) return;
 
-  const vehicleName = `${selectedVehicle.plate_number} | ${selectedVehicle.model}`;
+  const vehicleName = selectedVehicle.model;
 
   // update UI immediately
   setTrips((prev) => {
@@ -461,7 +461,7 @@ function Trip() {
 
                   const availableVehiclesForRow = getAvailableVehiclesForRow(trip);
                   const vehicleOptions = availableVehiclesForRow.map(
-                    (v) => `${v.plate_number} | ${v.model}`
+                    (v) => v.model
                   );
 
                   const availableDriversForRow = getAvailableDriversForRow(trip);
@@ -506,7 +506,7 @@ function Trip() {
                           className="cell-input cell-input--textarea"
                           value={trip.destination || ""}
                           onChange={(e) => handleChange(i, "destination", e.target.value)}
-                          placeholder="Destination…"
+                          
                         />
                       </td>
 
@@ -534,7 +534,7 @@ function Trip() {
                           className="cell-input cell-input--textarea"
                           value={trip.remarks || ""}
                           onChange={(e) => handleChange(i, "remarks", e.target.value)}
-                          placeholder="Remarks…"
+                          
                         />
                       </td>
 
