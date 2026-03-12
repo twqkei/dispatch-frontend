@@ -366,8 +366,6 @@ function TaskCard({ trip, onStatusChange }) {
                   />
                   {option}
                 </span>
-
-                {isCurrent && <span className="statusMenuCurrent">Current</span>}
               </button>
             );
           })}

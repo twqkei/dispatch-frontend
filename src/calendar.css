@@ -1,3 +1,7 @@
+* {
+    box-sizing: border-box;
+}
+
 /* ================= CALENDAR ================= */
 .react-calendar {
     width: 100%;
@@ -113,6 +117,8 @@
     min-height: 100vh;
     padding: 14px;
     background: #f3f6fb;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 .dashTop {
@@ -144,6 +150,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .iconBtn {
@@ -165,6 +172,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .dashTab {
@@ -197,7 +205,7 @@
 /* ================= GRID LAYOUT ================= */
 .dashGrid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(340px, 1fr);
     gap: 14px;
     margin-bottom: 16px;
     font-size: small;
@@ -321,8 +329,8 @@
     align-items: center;
     gap: 6px;
     font-size: 11px;
-    font-weight: 700;
-    padding: 4px 9px;
+    font-weight: 600;
+    padding: 3px 8px;
     border-radius: 999px;
     white-space: nowrap;
 }
@@ -340,8 +348,8 @@
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
-    padding: 6px 0;
-    min-width: 220px;
+    padding: 6px;
+    width: fit-content;
 }
 
 .statusMenuHead {
@@ -350,23 +358,31 @@
     font-weight: 700;
     color: #64748b;
     border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 4px;
 }
 
 .statusMenuItem {
-    width: 100%;
     border: none;
     background: transparent;
-    text-align: left;
-    padding: 8px 10px;
+    padding: 6px 10px;
     cursor: pointer;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
 }
 
-.statusMenuItem:hover,
-.statusMenuItem.current {
+.statusMenuItem:hover {
     background: #f8fafc;
+}
+
+.statusMenuItem.current {
+    background: transparent;
+}
+
+.statusMenuItem.current .statusMenuBadge {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
 }
 
 .statusMenuBadge {
@@ -383,12 +399,6 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-}
-
-.statusMenuCurrent {
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
 }
 
 
@@ -436,7 +446,13 @@
 
 
 /* ================= RESPONSIVE ================= */
-@media (max-width: 980px) {
+@media (max-width: 900px) {
+    .tripColBody {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 820px) {
     .dashTop {
         grid-template-columns: 60px 1fr;
         grid-template-rows: auto auto;
@@ -446,13 +462,54 @@
         justify-content: flex-start;
     }
 
+    .dashDateNav {
+        justify-content: flex-start;
+    }
+
+    .dashTabs {
+        width: 100%;
+    }
+
     .dashGrid {
         grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 700px) {
-    .tripColBody {
-        grid-template-columns: 1fr;
+    .dash {
+        padding: 10px;
+    }
+
+    .dashTop {
+        padding: 12px;
+    }
+
+    .dashHeaderDate {
+        font-size: 14px;
+    }
+
+    .dashTab {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+
+    .iconBtn {
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+    }
+
+    .react-calendar {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    .summaryRow {
+        gap: 6px;
+    }
+
+    .summaryBadge {
+        font-size: 11px;
+        padding: 4px 8px;
     }
 }
