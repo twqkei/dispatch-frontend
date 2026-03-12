@@ -231,14 +231,14 @@
 /* ================= COLUMN ================= */
 .col {
     border-radius: 18px;
-    padding: 12px;
+    padding: 8px;
 }
 
 .colHead {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 6px 6px 10px 6px;
+    padding: 4px 4px 6px 4px;
 }
 
 .colTitle {
