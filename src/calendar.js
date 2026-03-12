@@ -18,8 +18,8 @@ export default function CalendarComponent({ value, onDateClick, getTripsForDate 
 
         return (
           <div className="tripDotWrap">
-            {hasActive && <span classname="tripDot active" />}
-            {hasCancelled && <span classname="tripDot cancelled" />}
+            {hasActive && <span className="tripDot active" />}
+            {hasCancelled && <span className="tripDot cancelled" />}
           </div>
         );
       }}
