@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, use } from "react";
 import { useNavigate } from "react-router-dom";
 import CalendarComponent from "./calendar";
 import "react-calendar/dist/Calendar.css";
@@ -72,6 +72,22 @@ export default function Home() {
       CANCELLED: tripsForDay.filter((t) => t.status === "CANCELLED"),
     };
   }, [tripsForDay]);
+
+  const nextTrip = useMemo(() => {
+    const activeTrips = tripsForDay.filter((t) => t.status !== "CANCELLED");
+    return activeTrips[0] || tripsForDay[0] || null;
+  }, [tripsForDay]);
+
+  const summaryItems = useMemo(
+    () => [
+      {label: "Total", value: tripsForDay.length},
+      {label: "Upcoming", value: groupedTrips.UPCOMING.length},
+      {label: "Ongoing", value: groupedTrips.ONGOING.length},
+      {label: "Completed", value: groupedTrips.COMPLETED.length},
+      {label: "Cancelled", value: groupedTrips.CANCELLED.length},
+    ],
+    [tripsForDay, groupedTrips]
+  )
 
   const onClickDay = (date) => {
     const y = date.getFullYear();
@@ -179,15 +195,64 @@ export default function Home() {
           ))}
         </div>
 
-        <div className="">
-          <div className="colBody calendarColBody">
-            <CalendarComponent
-              value={selectedDate}
-              onDateClick={onClickDay}
-              getTripsForDate={getTripsForDate}
-            />
+       <div className="dashRight">
+  <div className="colBody calendarColBody">
+    <CalendarComponent
+      value={selectedDate}
+      onDateClick={onClickDay}
+      getTripsForDate={getTripsForDate}
+    />
+  </div>
+
+  <div className="rightPanel">
+    <div className="infoCard">
+      <div className="infoCardTitle">Day Summary</div>
+      <div className="summaryGrid">
+        {summaryItems.map((item) => (
+          <div key={item.label} className="summaryItem">
+            <div className="summaryValue">{item.value}</div>
+            <div className="summaryLabel">{item.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className="infoCard">
+      <div className="infoCardTitle">Next Trip</div>
+      {nextTrip ? (
+        <div className="nextTripCard">
+          <div className="nextTripVehicle">
+            {nextTrip.vehicle_name || "No vehicle"}
+          </div>
+          <div className="nextTripMeta">
+            {nextTrip.driver_name || "No driver"}
+            {nextTrip.time_of_travel ? ` | ${nextTrip.time_of_travel}` : ""}
+            {nextTrip.destination ? ` | ${nextTrip.destination}` : ""}
+          </div>
+          <div className={`miniStatus miniStatus-${(nextTrip.status || "UPCOMING").toLowerCase()}`}>
+            {nextTrip.status || "UPCOMING"}
           </div>
         </div>
+      ) : (
+        <div className="empty">No trips for this date.</div>
+      )}
+    </div>
+
+    <div className="infoCard">
+      <div className="infoCardTitle">Legend</div>
+      <div className="legendList">
+        <div className="legendItem">
+          <span className="tripDot active" />
+          <span>Active trip</span>
+        </div>
+        <div className="legendItem">
+          <span className="tripDot cancelled" />
+          <span>Cancelled trip</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
       </div>
     </div>
   );
