@@ -13,8 +13,8 @@ export default function CalendarComponent({ value, onDateClick, getTripsForDate 
         const trips = getTripsForDate(date);
         if (!trips || trips.length === 0) return null;
 
-        const hasActive = trips.some((t) => t.availability !== "CANCELLED");
-        const hasCancelled = trips.some((t) => t.availability === "CANCELLED");
+        const hasActive = trips.some((t) => t.status !== "CANCELLED");
+        const hasCancelled = trips.some((t) => t.status === "CANCELLED");
 
         return (
           <div className="tripDotWrap">
