@@ -1,5 +1,4 @@
-// CalendarComponent.js
-import Calendar from "react-calendar";
+import Calendar from "react-calendar"; 
 import "react-calendar/dist/Calendar.css";
 import "./calendar.css";
 
@@ -15,12 +14,11 @@ export default function CalendarComponent({ value, onDateClick, getTripsForDate 
         if (!trips || trips.length === 0) return null;
 
         const hasActive = trips.some((t) => t.availability !== "Cancelled");
-        const isAllCancelled = !hasActive;
+        const hasCancelled = trips.some((t) => t.availability === "Cancelled");
 
-        // Only show a single dot per day
         return (
           <div className="tripDotWrap">
-            <span className={`tripDot ${isAllCancelled ? "cancelled" : ""}`} />
+            <span className={`tripDot ${hasCancelled && !hasActive ? "cancelled" : ""}`} />
           </div>
         );
       }}
