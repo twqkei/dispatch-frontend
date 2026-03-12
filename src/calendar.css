@@ -427,13 +427,6 @@
     gap: 12px;
 }
 
-.infoCard {
-    background: #ffffff;
-    border-radius: 18px;
-    padding: 14px;
-    box-shadow: 0 10px 30px rgba(14, 26, 58, 0.08);
-    border: 1px solid #eef2f7;
-}
 
 .infoCardTitle {
     font-weight: 800;
@@ -485,21 +478,7 @@
     word-break: break-word;
 }
 
-.legendList {
-    display: grid;
-    gap: 10px;
-}
-
-.legendItem {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #334155;
-    font-size: 14px;
-}
-
 .miniStatus {
-    display: inline-flex;
     align-items: center;
     justify-content: center;
     width: fit-content;
@@ -509,22 +488,40 @@
     border-radius: 999px;
 }
 
-.miniStatus-upcoming {
+
+.summaryRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Colors */
+
+.summary-total {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.summary-upcoming {
     background: #fff8e1;
     color: #d97706;
 }
 
-.miniStatus-ongoing {
+.summary-ongoing {
     background: #ecfdf5;
     color: #059669;
 }
 
-.miniStatus-completed {
-    background: #e5e7eb;
-    color: #6b7280;
-}
-
-.miniStatus-cancelled {
+.summary-cancelled {
     background: #fff3f3;
     color: #dc2626;
+}
+
+.summaryBadge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    display: inline-block;
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }

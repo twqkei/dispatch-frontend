@@ -83,7 +83,6 @@ export default function Home() {
       {label: "Total", value: tripsForDay.length},
       {label: "Upcoming", value: groupedTrips.UPCOMING.length},
       {label: "Ongoing", value: groupedTrips.ONGOING.length},
-      {label: "Completed", value: groupedTrips.COMPLETED.length},
       {label: "Cancelled", value: groupedTrips.CANCELLED.length},
     ],
     [tripsForDay, groupedTrips]
@@ -206,15 +205,17 @@ export default function Home() {
 
   <div className="rightPanel">
     <div className="infoCard">
-      <div className="infoCardTitle">Day Summary</div>
-      <div className="summaryGrid">
-        {summaryItems.map((item) => (
-          <div key={item.label} className="summaryItem">
-            <div className="summaryValue">{item.value}</div>
-            <div className="summaryLabel">{item.label}</div>
-          </div>
-        ))}
-      </div>
+      <div className="infoCardTitle">Overview</div>
+      <div className="summaryRow">
+  {summaryItems.map((item) => (
+    <span
+      key={item.label}
+      className={`summaryBadge summary-${item.label.toLowerCase()}`}
+    >
+      {item.label}: {item.value}
+    </span>
+  ))}
+</div>
     </div>
 
     <div className="infoCard">
@@ -238,19 +239,6 @@ export default function Home() {
       )}
     </div>
 
-    <div className="infoCard">
-      <div className="infoCardTitle">Legend</div>
-      <div className="legendList">
-        <div className="legendItem">
-          <span className="tripDot active" />
-          <span>Active trip</span>
-        </div>
-        <div className="legendItem">
-          <span className="tripDot cancelled" />
-          <span>Cancelled trip</span>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
       </div>
