@@ -1,27 +1,27 @@
-import { useEffect, useMemo, useState, useCallback} from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import CalendarComponent from "./calendar";
 import "react-calendar/dist/Calendar.css";
 import "./calendar.css";
 import { apiFetch } from "./api";
 
-function startOfDay(d) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
+function startOfDay(date) {
+  const normalizedDate = new Date(date);
+  normalizedDate.setHours(0, 0, 0, 0);
+  return normalizedDate;
 }
 
-function addDays(date, n) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + n);
-  return d;
+function addDays(date, days) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
 }
 
 function toISO(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function sameDay(a, b) {
@@ -32,8 +32,18 @@ function sameDay(a, b) {
   );
 }
 
+const STATUS_ORDER = ["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"];
+
+const STATUS_COLORS = {
+  ONGOING: { bg: "#ecfdf5", color: "#059669", dot: "#10b981" },
+  UPCOMING: { bg: "#fff8e1", color: "#d97706", dot: "#f59e0b" },
+  COMPLETED: { bg: "#e5e7eb", color: "#6b7280", dot: "#9ca3af" },
+  CANCELLED: { bg: "#fff3f3", color: "#dc2626", dot: "#ef4444" },
+};
+
 export default function Home() {
   const navigate = useNavigate();
+
   const [tripData, setTripData] = useState([]);
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
 
@@ -52,7 +62,7 @@ export default function Home() {
   }, [loadTrips]);
 
   const getTripsForDate = useCallback(
-    (date) => tripData.filter((t) => t.date_of_trip === toISO(date)),
+    (date) => tripData.filter((trip) => trip.date_of_trip === toISO(date)),
     [tripData]
   );
 
@@ -66,41 +76,44 @@ export default function Home() {
 
   const groupedTrips = useMemo(() => {
     return {
-      UPCOMING: tripsForDay.filter((t) => t.status === "UPCOMING"),
-      ONGOING: tripsForDay.filter((t) => t.status === "ONGOING"),
-      COMPLETED: tripsForDay.filter((t) => t.status === "COMPLETED"),
-      CANCELLED: tripsForDay.filter((t) => t.status === "CANCELLED"),
+      UPCOMING: tripsForDay.filter((trip) => trip.status === "UPCOMING"),
+      ONGOING: tripsForDay.filter((trip) => trip.status === "ONGOING"),
+      COMPLETED: tripsForDay.filter((trip) => trip.status === "COMPLETED"),
+      CANCELLED: tripsForDay.filter((trip) => trip.status === "CANCELLED"),
     };
-  }, [tripsForDay]);
-
-  const nextTrip = useMemo(() => {
-    const activeTrips = tripsForDay.filter((t) => t.status !== "CANCELLED");
-    return activeTrips[0] || tripsForDay[0] || null;
   }, [tripsForDay]);
 
   const summaryItems = useMemo(
     () => [
-      {label: "Total", value: tripsForDay.length},
-      {label: "Upcoming", value: groupedTrips.UPCOMING.length},
-      {label: "Ongoing", value: groupedTrips.ONGOING.length},
-      {label: "Cancelled", value: groupedTrips.CANCELLED.length},
+      { label: "Total", value: tripsForDay.length },
+      { label: "Upcoming", value: groupedTrips.UPCOMING.length },
+      { label: "Ongoing", value: groupedTrips.ONGOING.length },
+      { label: "Cancelled", value: groupedTrips.CANCELLED.length },
     ],
     [tripsForDay, groupedTrips]
-  )
+  );
 
-  const onClickDay = (date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    navigate(`/trips/${y}-${m}-${d}`);
-  };
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const tabs = useMemo(
+    () => [addDays(selectedDate, -1), selectedDate, addDays(selectedDate, 1)],
+    [selectedDate]
+  );
+
+  const handleDayClick = useCallback(
+    (date) => {
+      navigate(`/trips/${toISO(date)}`);
+    },
+    [navigate]
+  );
 
   const handleStatusChange = async (tripId, newStatus) => {
     const previousTripData = tripData;
 
-    setTripData((prev) =>
-      prev.map((t) =>
-        t.id === tripId ? { ...t, status: newStatus, manual_status: true } : t
+    setTripData((prevTrips) =>
+      prevTrips.map((trip) =>
+        trip.id === tripId
+          ? { ...trip, status: newStatus, manual_status: true }
+          : trip
       )
     );
 
@@ -123,12 +136,6 @@ export default function Home() {
     }
   };
 
-  const today = useMemo(() => startOfDay(new Date()), []);
-  const tabs = useMemo(
-    () => [addDays(selectedDate, -1), selectedDate, addDays(selectedDate, 1)],
-    [selectedDate]
-  );
-
   return (
     <div className="dash">
       <div className="dashTop">
@@ -139,21 +146,25 @@ export default function Home() {
         <div className="dashDateNav">
           <button
             className="iconBtn"
-            onClick={() => setSelectedDate((d) => startOfDay(addDays(d, -1)))}
+            onClick={() =>
+              setSelectedDate((currentDate) =>
+                startOfDay(addDays(currentDate, -1))
+              )
+            }
           >
             ‹
           </button>
 
           <div className="dashTabs">
-            {tabs.map((d) => (
+            {tabs.map((date) => (
               <button
-                key={toISO(d)}
-                className={`dashTab ${sameDay(d, selectedDate) ? "active" : ""}`}
-                onClick={() => setSelectedDate(startOfDay(d))}
+                key={toISO(date)}
+                className={`dashTab ${sameDay(date, selectedDate) ? "active" : ""}`}
+                onClick={() => setSelectedDate(startOfDay(date))}
               >
-                {sameDay(d, today)
+                {sameDay(date, today)
                   ? "Today"
-                  : d.toLocaleDateString(undefined, {
+                  : date.toLocaleDateString(undefined, {
                       month: "short",
                       day: "numeric",
                     })}
@@ -163,7 +174,11 @@ export default function Home() {
 
           <button
             className="iconBtn"
-            onClick={() => setSelectedDate((d) => startOfDay(addDays(d, 1)))}
+            onClick={() =>
+              setSelectedDate((currentDate) =>
+                startOfDay(addDays(currentDate, 1))
+              )
+            }
           >
             ›
           </button>
@@ -187,60 +202,39 @@ export default function Home() {
               key={section}
               title={`${section} (${trips.length})`}
               items={trips}
-              renderItem={(t) => (
-                <TaskCard trip={t} onStatusChange={handleStatusChange} />
+              renderItem={(trip) => (
+                <TaskCard trip={trip} onStatusChange={handleStatusChange} />
               )}
             />
           ))}
         </div>
 
-       <div className="dashRight">
-  <div className="colBody calendarColBody">
-    <CalendarComponent
-      value={selectedDate}
-      onDateClick={onClickDay}
-      getTripsForDate={getTripsForDate}
-    />
-  </div>
-
-  <div className="rightPanel">
-    <div className="infoCard">
-      <div className="infoCardTitle">Overview</div>
-      <div className="summaryRow">
-  {summaryItems.map((item) => (
-    <span
-      key={item.label}
-      className={`summaryBadge summary-${item.label.toLowerCase()}`}
-    >
-      {item.label}: {item.value}
-    </span>
-  ))}
-</div>
-    </div>
-
-    <div className="infoCard">
-      <div className="infoCardTitle">Next Trip</div>
-      {nextTrip ? (
-        <div className="nextTripCard">
-          <div className="nextTripVehicle">
-            {nextTrip.vehicle_name || "No vehicle"}
+        <div className="dashRight">
+          <div className="colBody calendarColBody">
+            <CalendarComponent
+              value={selectedDate}
+              onDateClick={handleDayClick}
+              getTripsForDate={getTripsForDate}
+            />
           </div>
-          <div className="nextTripMeta">
-            {nextTrip.driver_name || "No driver"}
-            {nextTrip.time_of_travel ? ` | ${nextTrip.time_of_travel}` : ""}
-            {nextTrip.destination ? ` | ${nextTrip.destination}` : ""}
-          </div>
-          <div className={`miniStatus miniStatus-${(nextTrip.status || "UPCOMING").toLowerCase()}`}>
-            {nextTrip.status || "UPCOMING"}
+
+          <div className="rightPanel">
+            <div className="infoCard">
+              <div className="infoCardTitle">Overview</div>
+
+              <div className="summaryRow">
+                {summaryItems.map((item) => (
+                  <span
+                    key={item.label}
+                    className={`summaryBadge summary-${item.label.toLowerCase()}`}
+                  >
+                    {item.label}: {item.value}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      ) : (
-        <div className="empty">No trips for this date.</div>
-      )}
-    </div>
-
-  </div>
-</div>
       </div>
     </div>
   );
@@ -254,8 +248,10 @@ function Column({ title, items, renderItem }) {
       </div>
 
       <div className="colBody tripColBody">
-        {items.length ? (
-          items.map((t) => <div key={t.id || JSON.stringify(t)}>{renderItem(t)}</div>)
+        {items.length > 0 ? (
+          items.map((item) => (
+            <div key={item.id || JSON.stringify(item)}>{renderItem(item)}</div>
+          ))
         ) : (
           <div className="empty">No {title.toLowerCase()}.</div>
         )}
@@ -265,17 +261,8 @@ function Column({ title, items, renderItem }) {
 }
 
 function TaskCard({ trip, onStatusChange }) {
-  const statusColors = {
-    ONGOING: { bg: "#ecfdf5", color: "#059669", dot: "#10b981" },
-    UPCOMING: { bg: "#fff8e1", color: "#d97706", dot: "#f59e0b" },
-    COMPLETED: { bg: "#e5e7eb", color: "#6b7280", dot: "#9ca3af" },
-    CANCELLED: { bg: "#fff3f3", color: "#dc2626", dot: "#ef4444" },
-  };
-
-  const statusOptions = ["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"];
-
   const status = trip.status || "UPCOMING";
-  const { bg, color, dot } = statusColors[status] || statusColors.UPCOMING;
+  const { bg, color, dot } = STATUS_COLORS[status] || STATUS_COLORS.UPCOMING;
 
   const [menu, setMenu] = useState({
     visible: false,
@@ -283,38 +270,39 @@ function TaskCard({ trip, onStatusChange }) {
     y: 0,
   });
 
-  const handleRightClick = (e) => {
-    e.preventDefault();
+  const handleRightClick = (event) => {
+    event.preventDefault();
+
     setMenu({
       visible: true,
-      x: e.clientX,
-      y: e.clientY,
+      x: event.clientX,
+      y: event.clientY,
     });
   };
 
   const closeMenu = useCallback(() => {
-    setMenu((prev) => ({ ...prev, visible: false }));
+    setMenu((prevMenu) => ({ ...prevMenu, visible: false }));
   }, []);
 
   useEffect(() => {
     if (!menu.visible) return;
 
     const handleWindowClick = () => closeMenu();
-    const handleEscape = (e) => {
-      if (e.key === "Escape") closeMenu();
+    const handleEscape = (event) => {
+      if (event.key === "Escape") closeMenu();
     };
-    const handleScroll = () => closeMenu();
+    const handleScrollOrResize = () => closeMenu();
 
     window.addEventListener("click", handleWindowClick);
     window.addEventListener("keydown", handleEscape);
-    window.addEventListener("scroll", handleScroll, true);
-    window.addEventListener("resize", handleScroll);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
 
     return () => {
       window.removeEventListener("click", handleWindowClick);
       window.removeEventListener("keydown", handleEscape);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", handleScroll);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
     };
   }, [menu.visible, closeMenu]);
 
@@ -331,14 +319,8 @@ function TaskCard({ trip, onStatusChange }) {
             </div>
           </div>
 
-          <div
-            className="tripStatusBadge"
-            style={{ background: bg, color }}
-          >
-            <span
-              className="tripStatusDot"
-              style={{ background: dot }}
-            />
+          <div className="tripStatusBadge" style={{ background: bg, color }}>
+            <span className="tripStatusDot" style={{ background: dot }} />
             {status}
           </div>
         </div>
@@ -353,34 +335,34 @@ function TaskCard({ trip, onStatusChange }) {
             left: menu.x,
             zIndex: 9999,
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         >
           <div className="statusMenuHead">Status</div>
 
-          {statusOptions.map((option) => {
-            const opt = statusColors[option] || statusColors.UPCOMING;
+          {STATUS_ORDER.map((option) => {
+            const optionColors = STATUS_COLORS[option] || STATUS_COLORS.UPCOMING;
             const isCurrent = option === status;
 
             return (
               <button
                 key={option}
                 type="button"
+                className={`statusMenuItem ${isCurrent ? "current" : ""}`}
                 onClick={() => {
                   onStatusChange(trip.id, option);
                   closeMenu();
                 }}
-                className={`statusMenuItem ${isCurrent ? "current" : ""}`}
               >
                 <span
                   className="statusMenuBadge"
                   style={{
-                    background: opt.bg,
-                    color: opt.color,
+                    background: optionColors.bg,
+                    color: optionColors.color,
                   }}
                 >
                   <span
                     className="statusMenuDot"
-                    style={{ background: opt.dot }}
+                    style={{ background: optionColors.dot }}
                   />
                   {option}
                 </span>
