@@ -92,6 +92,12 @@ useEffect(() => {
     [monthTrips]
   );
 
+  const monthStatus = useMemo(
+    () => [...new Set(monthTrips.map(t => t.status).filter(Boolean))].sort(),
+    [monthTrips]
+  );
+
+
   return (
     <div className="logs-container">
       <div className="month-tabs">
@@ -161,6 +167,17 @@ useEffect(() => {
             >
               <option value="">All</option>
               {monthDrivers.map(d=><option key={d}>{d}</option>)}
+            </select>
+          </div>
+
+          <div className="control">
+            <label>Status</label>
+            <select
+              value={monthFilter.status}
+              onChange={e=>setMonthFilter(p=>({...p,status:e.target.value}))}
+            >
+              <option value="">All</option>
+              {monthStatus.map(v=><option key={v}>{v}</option>)}
             </select>
           </div>
 
