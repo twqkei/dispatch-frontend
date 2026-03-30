@@ -142,6 +142,7 @@ export default function Home() {
 
   return (
     <div className="dash">
+      {/* TOP BAR */}
       <div className="dashTop">
         <div className="dashBrand">
           <div className="dashLogo" />
@@ -201,34 +202,11 @@ export default function Home() {
         </div>
       </div>
 
+      {/* MAIN GRID */}
       <div className="dashGrid">
+        
+        {/* LEFT SIDE → Calendar + Overview */}
         <div className="dashLeft">
-          {hasTrips ? (
-            Object.entries(groupedTrips)
-              .filter(([_, trips]) => trips.length > 0)
-              .map(([section, trips]) => (
-                <Column
-                  key={section}
-                  title={`${
-                    section.charAt(0) + section.slice(1).toLowerCase()
-                  } (${trips.length})`}
-                  items={trips}
-                  renderItem={(trip) => (
-                    <TaskCard
-                      trip={trip}
-                      onStatusChange={handleStatusChange}
-                    />
-                  )}
-                />
-              ))
-          ) : (
-            <div className="emptyState">
-              <p>No trips for this day</p>
-            </div>
-          )}
-        </div>
-
-        <div className="dashRight">
           <div className="colBody calendarColBody">
             <CalendarComponent
               value={selectedDate}
@@ -253,6 +231,33 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* RIGHT SIDE → Trip Cards */}
+        <div className="dashRight">
+          {hasTrips ? (
+            Object.entries(groupedTrips)
+              .filter(([_, trips]) => trips.length > 0)
+              .map(([section, trips]) => (
+                <Column
+                  key={section}
+                  title={`${
+                    section.charAt(0) + section.slice(1).toLowerCase()
+                  } (${trips.length})`}
+                  items={trips}
+                  renderItem={(trip) => (
+                    <TaskCard
+                      trip={trip}
+                      onStatusChange={handleStatusChange}
+                    />
+                  )}
+                />
+              ))
+          ) : (
+            <div className="emptyState">
+              <p>No trips for this day</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -325,13 +330,10 @@ function TaskCard({ trip, onStatusChange }) {
               {trip.vehicle_name || "No vehicle"}
             </div>
             <div className="tripMeta">
-  <div>{trip.driver_name ? `Driver: ${trip.driver_name}` : "No driver"}</div>
-  <div>
-    {trip.destination ? `Destination: ${trip.destination}` : "No destination"}
-  </div>
-  <div> {trip.time_of_travel ? `Time of Travel: ${trip.time_of_travel}` : "No time"}
-  </div>
-</div>
+              <div>{trip.driver_name ? `Driver: ${trip.driver_name}` : "No driver"}</div>
+              <div>{trip.destination ? `Destination: ${trip.destination}` : "No destination"}</div>
+              <div>{trip.time_of_travel ? `Time of Travel: ${trip.time_of_travel}` : "No time"}</div>
+            </div>
           </div>
 
           <div className="tripStatusBadge" style={{ background: bg, color }}>
