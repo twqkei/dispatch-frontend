@@ -325,12 +325,11 @@ function TaskCard({ trip, onStatusChange }) {
               {trip.vehicle_name || "No vehicle"}
             </div>
             <div className="tripMeta">
-  <div>{trip.driver_name || "No driver"}</div>
+  <div>{trip.driver_name ? `Driver: ${trip.driver_name}` : "No driver"}</div>
   <div>
     {trip.destination ? `Destination: ${trip.destination}` : "No destination"}
   </div>
-  <div>Time of Travel:
-    {trip.time_of_travel || "No time"}
+  <div> {trip.time_of_travel ? `Time of Travel: ${trip.time_of_travel}` : "No time"}
   </div>
 </div>
           </div>
