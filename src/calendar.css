@@ -298,35 +298,31 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
 }
 
 .tripCardMain {
-    min-width: 0;
-    flex: 1;
+    /* min-width: 0;
+    flex: 1; */
     display: flex;
-    /* UPDATED */
     flex-direction: column;
-    /* UPDATED */
-    gap: 4px;
-    /* UPDATED */
+    gap: 6px;
 }
 
 .tripVehicle {
     margin-bottom: 0;
     font-weight: 700;
-    font-size: 13.5px;
-    /* UPDATED */
+    font-size: 14px;
     color: #111827;
 }
 
 .tripMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     font-size: 12px;
-    /* UPDATED */
-    line-height: 1.4;
-    /* UPDATED */
-    word-break: break-word;
     color: #64748b;
+    line-height: 1.4;
 }
 
 /* ================= STATUS BADGE ================= */
