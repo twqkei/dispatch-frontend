@@ -228,14 +228,14 @@
 /* ================= COLUMN ================= */
 .col {
     border-radius: 18px;
-    padding: 8px;
+    padding: 10px;
 }
 
 .colHead {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 4px 4px 6px 4px;
+    padding: 6px 4px 8px 4px;
 }
 
 .colTitle {
@@ -252,12 +252,12 @@
 .tripColBody {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 10px;
     align-items: start;
 }
 
 .tripColBody>* {
-    min-width: 0;
+    min-width: 220px;
 }
 
 .calendarColBody {
