@@ -224,12 +224,6 @@ export default function Home() {
           ) : (
             <div className="emptyState">
               <p>No trips for this day</p>
-              <button
-                className="primaryBtn"
-                onClick={() => navigate("/create-trip")}
-              >
-                Create Trip
-              </button>
             </div>
           )}
         </div>
