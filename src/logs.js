@@ -10,34 +10,40 @@ const months = [
 function Logs() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [allTrips, setAllTrips] = useState([]);
+
+  // ✅ FIXED: added status
   const [monthFilter, setMonthFilter] = useState({
     search: "",
     driver: "",
-    vehicle: ""
+    vehicle: "",
+    status: ""
   });
+
   const [selectedWeek, setSelectedWeek] = useState(null);
 
-useEffect(() => {
-  apiFetch("/trips/")
-    .then(data => setAllTrips(data))
-    .catch(err => {
-      console.error("Failed to fetch trips:", err);
-      setAllTrips([]);
-    });
-}, []);
+  useEffect(() => {
+    apiFetch("/trips/")
+      .then(data => setAllTrips(data))
+      .catch(err => {
+        console.error("Failed to fetch trips:", err);
+        setAllTrips([]);
+      });
+  }, []);
 
+  // ✅ search helper
   const matchesSearch = (t, q) => {
     if (!q) return true;
     const s = q.toLowerCase();
     return (
       (t.destination || "").toLowerCase().includes(s) ||
-      (t.driver || "").toLowerCase().includes(s) ||
+      (t.driver_name || "").toLowerCase().includes(s) ||
       (t.vehicle_name || "").toLowerCase().includes(s) ||
       (t.requester || "").toLowerCase().includes(s) ||
       (t.remarks || "").toLowerCase().includes(s)
     );
   };
 
+  // ✅ FIXED FILTER LOGIC
   const monthTrips = useMemo(() => {
     return allTrips
       .filter(t => {
@@ -47,14 +53,26 @@ useEffect(() => {
         return (
           d.getMonth() === selectedMonth &&
           matchesSearch(t, monthFilter.search) &&
-          (!monthFilter.driver || t.driver === monthFilter.driver) &&
-          (!monthFilter.vehicle || t.vehicle_name === monthFilter.vehicle)
+
+          // ✅ FIXED: use driver_name
+          (!monthFilter.driver ||
+            (t.driver_name || "").toLowerCase() === monthFilter.driver.toLowerCase()
+          ) &&
+
+          // ✅ FIXED: case-insensitive vehicle
+          (!monthFilter.vehicle ||
+            (t.vehicle_name || "").toLowerCase() === monthFilter.vehicle.toLowerCase()
+          ) &&
+
+          // ✅ FIXED: added status filter
+          (!monthFilter.status ||
+            (t.status || "").toLowerCase() === monthFilter.status.toLowerCase()
+          )
         );
       })
       .sort((a, b) => new Date(b.date_of_trip) - new Date(a.date_of_trip));
   }, [allTrips, selectedMonth, monthFilter]);
 
-  // ✅ Overall monthly total
   const monthlyTotalTrips = monthTrips.length;
 
   const grouped = useMemo(() => {
@@ -69,8 +87,8 @@ useEffect(() => {
   }, [monthTrips]);
 
   const weekKeys = useMemo(
-  () => Object.keys(grouped).map(Number).sort((a,b)=>b-a),
-  [grouped]
+    () => Object.keys(grouped).map(Number).sort((a,b)=>b-a),
+    [grouped]
   );
 
   const tableTrips = useMemo(() => {
@@ -82,8 +100,9 @@ useEffect(() => {
 
   const printTable = () => window.print();
 
+  // ✅ FIXED: use driver_name
   const monthDrivers = useMemo(
-    () => [...new Set(monthTrips.map(t => t.driver).filter(Boolean))].sort(),
+    () => [...new Set(monthTrips.map(t => t.driver_name).filter(Boolean))].sort(),
     [monthTrips]
   );
 
@@ -97,9 +116,9 @@ useEffect(() => {
     [monthTrips]
   );
 
-
   return (
     <div className="logs-container">
+      {/* Month Tabs */}
       <div className="month-tabs">
         {months.map((m,i)=>(
           <button
@@ -148,6 +167,8 @@ useEffect(() => {
       {/* Toolbar */}
       <div className="toolbar-card no-print">
         <div className="toolbar-left">
+
+          {/* Vehicle */}
           <div className="control">
             <label>Vehicle</label>
             <select
@@ -155,10 +176,13 @@ useEffect(() => {
               onChange={e=>setMonthFilter(p=>({...p,vehicle:e.target.value}))}
             >
               <option value="">All</option>
-              {monthVehicles.map(v=><option key={v}>{v}</option>)}
+              {monthVehicles.map(v=>(
+                <option key={v} value={v}>{v}</option> // ✅ FIXED
+              ))}
             </select>
           </div>
 
+          {/* Driver */}
           <div className="control">
             <label>Driver</label>
             <select
@@ -166,10 +190,13 @@ useEffect(() => {
               onChange={e=>setMonthFilter(p=>({...p,driver:e.target.value}))}
             >
               <option value="">All</option>
-              {monthDrivers.map(d=><option key={d}>{d}</option>)}
+              {monthDrivers.map(d=>(
+                <option key={d} value={d}>{d}</option> // ✅ FIXED
+              ))}
             </select>
           </div>
 
+          {/* Status */}
           <div className="control">
             <label>Status</label>
             <select
@@ -177,10 +204,13 @@ useEffect(() => {
               onChange={e=>setMonthFilter(p=>({...p,status:e.target.value}))}
             >
               <option value="">All</option>
-              {monthStatus.map(v=><option key={v}>{v}</option>)}
+              {monthStatus.map(s=>(
+                <option key={s} value={s}>{s}</option> // ✅ FIXED
+              ))}
             </select>
           </div>
 
+          {/* Search */}
           <div className="control control-search">
             <label>Search</label>
             <input
@@ -229,8 +259,8 @@ useEffect(() => {
                     {(grouped[week] || []).map((trip,i)=>(
                       <tr key={trip.id}>
                         <td>{i+1}</td>
-                        <td>{trip.vehicle_name}</td>
-                        <td>{trip.driver}</td>
+                        <td>{trip.vehicle_name}</td> {/* ✅ FIXED */}
+                        <td>{trip.driver_name}</td> {/* ✅ FIXED */}
                         <td>{trip.destination}</td>
                         <td>{trip.time_of_travel}</td>
                         <td>{trip.passengers}</td>
@@ -278,7 +308,7 @@ useEffect(() => {
                   <tr key={trip.id}>
                     <td>{i+1}</td>
                     <td>{trip.vehicle_name}</td>
-                    <td>{trip.driver}</td>
+                    <td>{trip.driver_name}</td>
                     <td>{trip.destination}</td>
                     <td>{trip.time_of_travel}</td>
                     <td>{trip.passengers}</td>
