@@ -506,7 +506,7 @@ function Trip() {
                           className="cell-input cell-input--textarea"
                           value={trip.destination || ""}
                           onChange={(e) => handleChange(i, "destination", e.target.value)}
-                          placeholder="Destination…"
+                            
                         />
                       </td>
 

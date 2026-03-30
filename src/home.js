@@ -45,7 +45,9 @@ export default function Home() {
   const navigate = useNavigate();
 
   const [tripData, setTripData] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() =>
+    startOfDay(new Date())
+  );
 
   const loadTrips = useCallback(async () => {
     try {
@@ -92,6 +94,8 @@ export default function Home() {
     ],
     [tripsForDay, groupedTrips]
   );
+
+  const hasTrips = tripsForDay.length > 0;
 
   const today = useMemo(() => startOfDay(new Date()), []);
   const tabs = useMemo(
@@ -159,7 +163,9 @@ export default function Home() {
             {tabs.map((date) => (
               <button
                 key={toISO(date)}
-                className={`dashTab ${sameDay(date, selectedDate) ? "active" : ""}`}
+                className={`dashTab ${
+                  sameDay(date, selectedDate) ? "active" : ""
+                }`}
                 onClick={() => setSelectedDate(startOfDay(date))}
               >
                 {sameDay(date, today)
@@ -197,16 +203,35 @@ export default function Home() {
 
       <div className="dashGrid">
         <div className="dashLeft">
-          {Object.entries(groupedTrips).map(([section, trips]) => (
-            <Column
-              key={section}
-              title={`${section} (${trips.length})`}
-              items={trips}
-              renderItem={(trip) => (
-                <TaskCard trip={trip} onStatusChange={handleStatusChange} />
-              )}
-            />
-          ))}
+          {hasTrips ? (
+            Object.entries(groupedTrips)
+              .filter(([_, trips]) => trips.length > 0)
+              .map(([section, trips]) => (
+                <Column
+                  key={section}
+                  title={`${
+                    section.charAt(0) + section.slice(1).toLowerCase()
+                  } (${trips.length})`}
+                  items={trips}
+                  renderItem={(trip) => (
+                    <TaskCard
+                      trip={trip}
+                      onStatusChange={handleStatusChange}
+                    />
+                  )}
+                />
+              ))
+          ) : (
+            <div className="emptyState">
+              <p>No trips for this day</p>
+              <button
+                className="primaryBtn"
+                onClick={() => navigate("/create-trip")}
+              >
+                Create Trip
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="dashRight">
@@ -248,13 +273,11 @@ function Column({ title, items, renderItem }) {
       </div>
 
       <div className="colBody tripColBody">
-        {items.length > 0 ? (
-          items.map((item) => (
-            <div key={item.id || JSON.stringify(item)}>{renderItem(item)}</div>
-          ))
-        ) : (
-          <div className="empty">No {title.toLowerCase()}.</div>
-        )}
+        {items.map((item) => (
+          <div key={item.id || JSON.stringify(item)}>
+            {renderItem(item)}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -262,7 +285,8 @@ function Column({ title, items, renderItem }) {
 
 function TaskCard({ trip, onStatusChange }) {
   const status = trip.status || "UPCOMING";
-  const { bg, color, dot } = STATUS_COLORS[status] || STATUS_COLORS.UPCOMING;
+  const { bg, color, dot } =
+    STATUS_COLORS[status] || STATUS_COLORS.UPCOMING;
 
   const [menu, setMenu] = useState({
     visible: false,
@@ -272,7 +296,6 @@ function TaskCard({ trip, onStatusChange }) {
 
   const handleRightClick = (event) => {
     event.preventDefault();
-
     setMenu({
       visible: true,
       x: event.clientX,
@@ -281,28 +304,21 @@ function TaskCard({ trip, onStatusChange }) {
   };
 
   const closeMenu = useCallback(() => {
-    setMenu((prevMenu) => ({ ...prevMenu, visible: false }));
+    setMenu((prev) => ({ ...prev, visible: false }));
   }, []);
 
   useEffect(() => {
     if (!menu.visible) return;
 
-    const handleWindowClick = () => closeMenu();
-    const handleEscape = (event) => {
-      if (event.key === "Escape") closeMenu();
-    };
-    const handleScrollOrResize = () => closeMenu();
+    const handleClick = () => closeMenu();
+    const handleEscape = (e) => e.key === "Escape" && closeMenu();
 
-    window.addEventListener("click", handleWindowClick);
+    window.addEventListener("click", handleClick);
     window.addEventListener("keydown", handleEscape);
-    window.addEventListener("scroll", handleScrollOrResize, true);
-    window.addEventListener("resize", handleScrollOrResize);
 
     return () => {
-      window.removeEventListener("click", handleWindowClick);
+      window.removeEventListener("click", handleClick);
       window.removeEventListener("keydown", handleEscape);
-      window.removeEventListener("scroll", handleScrollOrResize, true);
-      window.removeEventListener("resize", handleScrollOrResize);
     };
   }, [menu.visible, closeMenu]);
 
@@ -311,7 +327,9 @@ function TaskCard({ trip, onStatusChange }) {
       <div className="card tripCard" onContextMenu={handleRightClick}>
         <div className="tripCardTop">
           <div className="tripCardMain">
-            <div className="tripVehicle">{trip.vehicle_name || "No vehicle"}</div>
+            <div className="tripVehicle">
+              {trip.vehicle_name || "No vehicle"}
+            </div>
             <div className="tripMeta">
               {trip.driver_name || "No driver"}
               {trip.time_of_travel ? ` | ${trip.time_of_travel}` : ""}
@@ -335,19 +353,18 @@ function TaskCard({ trip, onStatusChange }) {
             left: menu.x,
             zIndex: 9999,
           }}
-          onClick={(event) => event.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="statusMenuHead">Status</div>
 
           {STATUS_ORDER.map((option) => {
-            const optionColors = STATUS_COLORS[option] || STATUS_COLORS.UPCOMING;
-            const isCurrent = option === status;
+            const optionColors =
+              STATUS_COLORS[option] || STATUS_COLORS.UPCOMING;
 
             return (
               <button
                 key={option}
-                type="button"
-                className={`statusMenuItem ${isCurrent ? "current" : ""}`}
+                className="statusMenuItem"
                 onClick={() => {
                   onStatusChange(trip.id, option);
                   closeMenu();
