@@ -212,23 +212,6 @@ export default function Home() {
               getTripsForDate={getTripsForDate}
             />
           </div>
-
-          <div className="rightPanel">
-            <div className="infoCard">
-              <div className="infoCardTitle">Overview</div>
-
-              <div className="summaryRow">
-                {summaryItems.map((item) => (
-                  <span
-                    key={item.label}
-                    className={`summaryBadge summary-${item.label.toLowerCase()}`}
-                  >
-                    {item.label}: {item.value}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* RIGHT SIDE → Trip Cards */}
