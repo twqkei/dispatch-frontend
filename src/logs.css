@@ -5,6 +5,7 @@
     font-family: "Trebuchet MS", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+/* Month Tabs */
 .month-tabs {
     display: flex;
     gap: 8px;
@@ -37,7 +38,8 @@
 
 .logs-title {
     font-size: 22px;
-    font-weight: 5x00;
+    font-weight: 500;
+    /* FIXED */
 }
 
 .logs-title-muted {
@@ -56,7 +58,7 @@
     cursor: pointer;
 }
 
-/* NEW: Folder-style week tabs */
+/* Folder-style week tabs */
 .folder-tabs {
     display: flex;
     gap: 10px;
@@ -117,12 +119,14 @@
     background: #10b981;
 }
 
+/* Toolbar */
 .toolbar-card {
     background: white;
     border-radius: 0 16px 16px 16px;
     padding: 14px;
     border: 1px solid rgba(0, 0, 0, 0.06);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -208,7 +212,7 @@
     background: white;
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, .06);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
     border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
@@ -242,9 +246,9 @@
     display: none;
 }
 
+/* Print Styles */
 @media print {
 
-    /* Hide UI */
     .sidebar,
     nav,
     aside,
@@ -292,6 +296,7 @@
     tfoot {
         display: table-row-group;
     }
+
     @page {
         size: auto;
         margin: 12mm;
