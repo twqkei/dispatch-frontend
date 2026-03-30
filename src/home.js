@@ -86,16 +86,6 @@ export default function Home() {
     };
   }, [tripsForDay]);
 
-  const summaryItems = useMemo(
-    () => [
-      { label: "Total", value: tripsForDay.length },
-      { label: "Upcoming", value: groupedTrips.UPCOMING.length },
-      { label: "Ongoing", value: groupedTrips.ONGOING.length },
-      { label: "Cancelled", value: groupedTrips.CANCELLED.length },
-    ],
-    [tripsForDay, groupedTrips]
-  );
-
   const hasTrips = tripsForDay.length > 0;
 
   const today = useMemo(() => startOfDay(new Date()), []);
