@@ -4,6 +4,7 @@ import CalendarComponent from "./calendar";
 import "react-calendar/dist/Calendar.css";
 import "./calendar.css";
 import { apiFetch } from "./api";
+import { FaPlus } from "react-icons/fa";
 
 function startOfDay(date) {
   const normalizedDate = new Date(date);
@@ -191,15 +192,12 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="dashMeta">
-          <div className="dashHeaderDate">
-            {selectedDate.toLocaleDateString(undefined, {
-              weekday: "short",
-              month: "long",
-              day: "numeric",
-            })}
-          </div>
-        </div>
+      <div className="dashMeta">
+  <button className="addTripBtn" onClick={() => navigate("/trips/new")}>
+    <FaPlus style={{ marginRight: "6px" }} />
+    Add New Trip
+  </button>
+</div>
       </div>
 
       {/* MAIN GRID */}
