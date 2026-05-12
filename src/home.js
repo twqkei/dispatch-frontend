@@ -42,7 +42,6 @@ const STATUS_CONFIG = {
 
 /* ── Status Badge ─────────────────────────────── */
 function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.UPCOMING;
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ring-1 whitespace-nowrap ${cfg.badge}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -54,8 +53,6 @@ function StatusBadge({ status }) {
 /* ── Task Card ────────────────────────────────── */
 function TaskCard({ trip, onStatusChange }) {
   const status = trip.status || "UPCOMING";
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.UPCOMING;
-
   const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
 
   const closeMenu = useCallback(() => setMenu((p) => ({ ...p, visible: false })), []);
