@@ -1,18 +1,3 @@
-body {
-  margin: 0;
-  font-family: "Trebuchet MS", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-        font-family: "Trebuchet MS", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-}
-
-.dot {
-  height: 6px;
-  width: 6px;
-  background: red;
-  border-radius: 50%;
-  margin: 0 auto;
-  margin-top: 2px;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
