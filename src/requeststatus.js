@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
 
 const getStatusConfig = (status) => {
-  switch (status) {
-    case "Approved":
+  switch ((status || "").toUpperCase()) {
+    case "APPROVED":
       return {
         dot: "bg-emerald-400",
         badge: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
         label: "Approved",
       };
-    case "Pending":
+    case "PENDING":
       return {
         dot: "bg-amber-400",
         badge: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
         label: "Pending",
       };
-    case "Disapproved":
+    case "DISAPPROVED":
       return {
         dot: "bg-red-400",
         badge: "bg-red-50 text-red-700 ring-1 ring-red-200",
@@ -86,8 +86,6 @@ export default function RequestStatus() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 15000);
-    return () => clearInterval(interval);
   }, []);
 
   const filteredData = data.filter((item) => {
@@ -280,7 +278,7 @@ export default function RequestStatus() {
             <span className="text-xs text-slate-400">
               Showing {filteredData.length} of {data.length} requests
             </span>
-            <span className="text-xs text-slate-300">Auto-refreshes every 15s</span>
+            {/* <span className="text-xs text-slate-300">Manual Refresh Available</span> */}
           </div>
         )}
       </div>
