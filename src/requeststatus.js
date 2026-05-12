@@ -205,10 +205,11 @@ export default function RequestStatus() {
                 <th className="text-left px-5 py-3 bg-slate-50/60">#</th>
                 <th className="text-left px-5 py-3 bg-slate-50/60">Name</th>
                 <th className="text-left px-5 py-3 bg-slate-50/60">Destination</th>
-                <th className="text-left px-5 py-3 bg-slate-50/60">Status</th>
                 <th className="text-left px-5 py-3 bg-slate-50/60">Driver</th>
                 <th className="text-left px-5 py-3 bg-slate-50/60">Vehicle</th>
                 <th className="text-left px-5 py-3 bg-slate-50/60">Remarks</th>
+                <th className="text-left px-5 py-3 bg-slate-50/60">Status</th>
+
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -248,9 +249,6 @@ export default function RequestStatus() {
                     <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">
                       {item["Travel Destination"] || "—"}
                     </td>
-                    <td className="px-5 py-3.5">
-                      <StatusBadge status={item["STATUS"]} />
-                    </td>
                     <td className="px-5 py-3.5 text-slate-600">
                       {item["Assigned Driver"] || (
                         <span className="text-slate-300">—</span>
@@ -265,6 +263,9 @@ export default function RequestStatus() {
                       {item["Remarks"] || (
                         <span className="text-slate-300">—</span>
                       )}
+                    </td>
+                      <td className="px-5 py-3.5">
+                      <StatusBadge status={item["STATUS"]} />
                     </td>
                   </tr>
                 ))
