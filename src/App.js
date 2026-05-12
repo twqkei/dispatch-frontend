@@ -75,7 +75,6 @@ function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/drivers" element={<Drivers />} />
-          <Route path="/vehicles" element={<Vehicles />} />
           <Route path="/status" element={<Status />} />
           <Route path="/trips/:date" element={<Trips />} />
         </Routes>
