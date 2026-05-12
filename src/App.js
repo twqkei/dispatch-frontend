@@ -4,7 +4,6 @@ import Logs from "./logs";
 import Drivers from "./drivers";
 import Status from "./requeststatus";
 import Trips from "./trip";
-import Vehicles from "./vehicles";
 import "./App.css";
 import Login from "./login";
 import Logout from "./logout";
@@ -52,15 +51,6 @@ function App() {
               }
             >
               Drivers
-            </NavLink>
-
-            <NavLink
-              to="/vehicles"
-              className={({ isActive }) =>
-                `pill ${isActive ? "active vehicles" : ""}`
-              }
-            >
-              Vehicles
             </NavLink>
 
             <NavLink
