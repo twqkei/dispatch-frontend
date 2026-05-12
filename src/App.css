@@ -139,7 +139,7 @@ body {
 }
 
 .pill.active.status {
-  background: yellow;
+  background: rgb(240, 240, 50);
   color: white;
 }
 
