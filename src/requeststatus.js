@@ -14,11 +14,11 @@ const getStatusConfig = (status) => {
         badge: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
         label: "Pending",
       };
-    case "Done":
+    case "Dissapproved":
       return {
-        dot: "bg-blue-400",
-        badge: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
-        label: "Done",
+        dot: "bg-red-400",
+        badge: "bg-red-50 text-red-700 ring-1 ring-red-200",
+        label: "Dissapproved",
       };
     default:
       return {
