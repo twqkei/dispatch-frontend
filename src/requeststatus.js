@@ -118,13 +118,7 @@ export default function RequestStatus() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
-          <button onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-400 hover:bg-emerald-500 text-emerald-900 rounded-xl text-sm font-semibold transition shadow-sm whitespace-nowrap">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
-            </svg>
-            Send Request
-          </button>
+    
 
           <div className="w-px h-5 bg-slate-200" />
 
@@ -142,9 +136,13 @@ export default function RequestStatus() {
             {STATUSES.map((s) => <option key={s} value={s}>{s === "All" ? "All Status" : s}</option>)}
           </select>
 
-          <span className="ml-auto text-xs text-slate-400 font-medium">
-            {filteredData.length} result{filteredData.length !== 1 ? "s" : ""}
-          </span>
+          <button onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-400 hover:bg-emerald-500 text-emerald-900 rounded-xl text-sm font-semibold transition shadow-sm whitespace-nowrap">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+            </svg>
+            Send Request
+          </button>
         </div>
 
         <div className="overflow-x-auto">
