@@ -65,7 +65,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const STATUSES = ["All", "Pending", "Approved", "Done"];
+const STATUSES = ["All", "Pending", "Approved", "Disapproved"];
 
 export default function RequestStatus() {
   const [data, setData] = useState([]);
