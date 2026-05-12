@@ -2,12 +2,12 @@ import { Routes, Route, NavLink, useLocation } from "react-router-dom";
 import Home from "./home";
 import Logs from "./logs";
 import Drivers from "./drivers";
-import Vehicles from "./vehicles";
+import Status from "./requeststatus";
 import Trips from "./trip";
+import Vehicles from "./vehicles";
 import "./App.css";
 import Login from "./login";
-import Logout from "./logout"; // at the top of App.jsx
-
+import Logout from "./logout";
 
 function App() {
   const location = useLocation();
@@ -18,12 +18,15 @@ function App() {
   return (
     <div className="app-container">
 
-      {/* Top bar (only show if NOT login page) */}
+      {/* Top bar */}
       {!hideTopbar && (
         <header className="topbar">
-          <div className="brand"> Vehicle Dispatch | 2026 </div>
+          <div className="brand">
+            Vehicle Dispatch | 2026
+          </div>
 
           <nav className="pill-nav" aria-label="Primary">
+
             <NavLink
               to="/home"
               className={({ isActive }) =>
@@ -59,8 +62,19 @@ function App() {
             >
               Vehicles
             </NavLink>
+
+            <NavLink
+              to="/status"
+              className={({ isActive }) =>
+                `pill ${isActive ? "active status" : ""}`
+              }
+            >
+              Request Status
+            </NavLink>
+
           </nav>
-          <Logout/>
+
+          <Logout />
         </header>
       )}
 
@@ -72,9 +86,11 @@ function App() {
           <Route path="/logs" element={<Logs />} />
           <Route path="/drivers" element={<Drivers />} />
           <Route path="/vehicles" element={<Vehicles />} />
+          <Route path="/status" element={<Status />} />
           <Route path="/trips/:date" element={<Trips />} />
         </Routes>
       </main>
+
     </div>
   );
 }
