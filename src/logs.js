@@ -331,7 +331,7 @@ function Logs() {
             <div className="monthly-total-footer">
               Overall Monthly Total: <b>{monthlyTotalTrips}</b>
             </div>
-          </>
+          </> 
         )}
       </div>
     </div>
