@@ -1,140 +1,86 @@
 /* react-calendar overrides — Tailwind can't reach these internal elements */
 .react-calendar {
-    width: 100%;
-    border: none;
-    border-radius: 16px;
-    padding: 12px;
-    font-size: 13px;
-    font-family: inherit;
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  padding: 12px;
+  font-size: 13px;
+  font-family: inherit;
 }
-
+ 
 .react-calendar__navigation {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
-
+ 
 .react-calendar__navigation button {
-    min-width: 30px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-weight: 700;
-    color: #111827;
-    font-size: 14px;
+  min-width: 30px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  color: #111827;
+  font-size: 14px;
 }
-
+ 
 .react-calendar__navigation button:hover {
-    background: #f1f5f9;
-    border-radius: 8px;
+  background: #f1f5f9;
+  border-radius: 8px;
 }
-
+ 
 .react-calendar__month-view__weekdays {
-    text-align: center;
-    font-weight: 700;
-    font-size: 11px;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  text-align: center;
+  font-weight: 700;
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-
+ 
 .react-calendar__month-view__weekdays abbr {
-    text-decoration: none;
+  text-decoration: none;
 }
-
+ 
 .react-calendar__tile {
-    border-radius: 10px;
-    padding: 6px 0;
-    text-align: center;
-    font-weight: 500;
-    height: 52px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.15s;
+  border-radius: 10px;
+  padding: 6px 0;
+  text-align: center;
+  font-weight: 500;
+  height: 52px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
 }
-
-.react-calendar__tile abbr {
-    text-decoration: none;
-}
-
-.react-calendar__tile:hover {
-    background: #f1f5f9;
-    transform: scale(1.05);
-}
-
-.react-calendar__tile--now {
-    background: rgba(37, 99, 235, 0.07) !important;
-    border: 2px solid #2563eb;
-    border-radius: 10px;
-}
-
-.react-calendar__tile--active {
-    background: #2563eb !important;
-    color: white !important;
-    border-radius: 10px;
-}
-
-.react-calendar__tile--active:hover {
-    background: #1d4ed8 !important;
-}
-
+ 
+.react-calendar__tile abbr { text-decoration: none; }
+.react-calendar__tile:hover { background: #f1f5f9; transform: scale(1.05); }
+.react-calendar__tile--now { background: rgba(37,99,235,0.07) !important; border: 2px solid #2563eb; border-radius: 10px; }
+.react-calendar__tile--active { background: #2563eb !important; color: white !important; border-radius: 10px; }
+.react-calendar__tile--active:hover { background: #1d4ed8 !important; }
+ 
 /* Trip dot indicators */
-.tripDotWrap {
-    display: flex;
-    justify-content: center;
-    margin-top: 3px;
-    gap: 3px;
-}
-
-.tripDot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-}
-
-.tripDot.active {
-    background: #10b981;
-}
-
-.tripDot.cancelled {
-    background: #ef4444;
-}
-
+.tripDotWrap { display: flex; justify-content: center; margin-top: 3px; gap: 3px; }
+.tripDot { width: 5px; height: 5px; border-radius: 50%; }
+.tripDot.active    { background: #10b981; }
+.tripDot.cancelled { background: #ef4444; }
+ 
 /* Tile states */
-.trip-past {
-    background: #fff !important;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-}
-
-.trip-future {
-    background: rgba(16, 185, 129, 0.07) !important;
-    border-radius: 10px;
-}
-
-.trip-today {
-    background: rgba(37, 99, 235, 0.07) !important;
-    border: 2px solid #2563eb;
-    border-radius: 10px;
-}
-
+.trip-past   { background: #fff !important; border: 1px solid #e2e8f0; border-radius: 10px; }
+.trip-future { background: rgba(16,185,129,0.07) !important; border-radius: 10px; }
+.trip-today  { background: rgba(37,99,235,0.07) !important; border: 2px solid #2563eb; border-radius: 10px; }
+ 
 .trip-past abbr,
 .trip-future abbr,
-.trip-today abbr {
-    font-weight: 700;
-    color: #111827;
-}
-
+.trip-today abbr { font-weight: 700; color: #111827; }
+ 
 /* Print */
-@media print {
-    .react-calendar {
-        display: none !important;
-    }
-}
+@media print { .react-calendar { display: none !important; } }
+ 
