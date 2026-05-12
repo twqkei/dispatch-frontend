@@ -177,7 +177,7 @@ function Trip() {
     "Research Development Division","Production Division","Carmen Campus","TBI","Engineering Office",
     "GAD","Internalization","Office of the President","Quality Assurance","GASSO","Faculty Association",
     "Admin Services","Registrar","Accounting Office","GSU","Other Agency","OP","Budget","BOARD SEC","External Visitors",
-    "Samal Campus", "BAC", "SETBI"
+    "Samal Campus", "BAC", "SETBI", "Admission Office"
   ];
 
   useEffect(() => {
