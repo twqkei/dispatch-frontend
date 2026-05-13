@@ -7,7 +7,6 @@ import Trips from "./trip";
 import "./App.css";
 import Login from "./login";
 import Logout from "./logout";
-import Landing from "./landing";
 import RequestPage from "./request";
 
 function App() {

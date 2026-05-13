@@ -4,7 +4,6 @@ import CalendarComponent from "./calendar";
 import "react-calendar/dist/Calendar.css";
 import "./calendar.css";
 import { apiFetch } from "./api";
-import { FaPlus } from "react-icons/fa";
 
 function startOfDay(date) {
   const normalizedDate = new Date(date);
