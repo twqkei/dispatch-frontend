@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 // ─── Utility: format time to 12hr ────────────────────────────────────────────
 const fmt12 = (t) => {
