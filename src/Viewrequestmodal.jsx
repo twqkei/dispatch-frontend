@@ -16,6 +16,30 @@ const Row = ({ label, value, full }) => (
   </div>
 );
 
+// ─── Editable Row ─────────────────────────────────────────────────────────────
+const EditRow = ({ label, value, onChange, type = "text", full, placeholder }) => (
+  <div className={`flex ${full ? "flex-col gap-1" : "justify-between items-start gap-4"} py-2 border-b border-dashed border-slate-200 last:border-0`}>
+    <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 shrink-0">{label}</span>
+    {type === "textarea" ? (
+      <textarea
+        rows={3}
+        className="text-xs font-medium text-slate-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none w-full"
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    ) : (
+      <input
+        type={type}
+        className={`text-xs font-medium text-slate-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300 ${full ? "w-full" : "text-right w-40"}`}
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    )}
+  </div>
+);
+
 // ─── Section Header ───────────────────────────────────────────────────────────
 const Section = ({ icon, title }) => (
   <div className="flex items-center gap-2 mt-5 mb-2">
@@ -25,378 +49,420 @@ const Section = ({ icon, title }) => (
   </div>
 );
 
-// ─── Email Modal ──────────────────────────────────────────────────────────────
-function SendEmailModal({ request, onClose }) {
-  const [email, setEmail] = useState(request?.email || "");
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSend = async () => {
-    if (!email.trim() || !email.includes("@")) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    setSending(true);
-    setError("");
-
-    // Build plain-text receipt body for email
-    const body = `
-VEHICLE REQUEST DETAILS
-========================
-Reference No : ${request?.referenceNo || "N/A"}
-Status       : ${request?.status || "Pending"}
-Submitted    : ${request?.timestamp || "—"}
-
-REQUESTER INFORMATION
-─────────────────────
-Name         : ${request?.name || "—"}
-Email        : ${request?.email || "—"}
-Department   : ${request?.department || "—"}
-Immediate Head: ${request?.immediateHead || "—"}
-Mobile       : ${request?.mobile || "—"}
-
-TRAVEL DETAILS
-──────────────
-Date         : ${request?.dateOfTravel || "—"}
-Destination  : ${request?.destination || "—"}
-Purpose      : ${request?.purpose || "—"}
-Waiting Area : ${request?.waitingArea || "—"}
-Departure    : ${fmt12(request?.departureTime)}
-Return       : ${fmt12(request?.expectedReturn)}
-
-PASSENGERS
-──────────
-Count        : ${request?.numPassengers || "—"}
-Names        : ${request?.passengerNames || "—"}
-Project Based: ${request?.projectBased || "—"}
-${request?.projectBased === "Yes" ? `Funding Type : ${request?.fundingType || "—"}` : ""}
-
-─────────────────────────────────────────
-This is an automated receipt from the DNSC Vehicle Scheduling System.
-    `.trim();
-
-    // Using mailto as fallback (works without backend)
-    // For production, replace with your email API (EmailJS, SendGrid, etc.)
-    try {
-      const subject = encodeURIComponent(`Vehicle Request Details – ${request?.name || ""} (${request?.dateOfTravel || ""})`);
-      const encodedBody = encodeURIComponent(body);
-      window.open(`mailto:${email}?subject=${subject}&body=${encodedBody}`, "_blank");
-      setSent(true);
-    } catch {
-      setError("Could not open email client. Please copy the details manually.");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
-        {sent ? (
-          <div className="text-center py-4">
-            <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 className="font-bold text-slate-800 mb-1">Email Client Opened!</h3>
-            <p className="text-xs text-slate-500 mb-4">Your default email app opened with the receipt pre-filled. Just hit Send.</p>
-            <button onClick={onClose} className="w-full py-2.5 bg-emerald-400 hover:bg-emerald-500 text-emerald-900 font-semibold text-sm rounded-xl transition">Done</button>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="font-bold text-slate-800 text-base">Send Receipt by Email</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Opens your email app pre-filled</p>
-              </div>
-              <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 transition">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Recipient Email</label>
-              <input
-                type="email"
-                className="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-300 text-slate-700 bg-slate-50 placeholder-slate-400"
-                placeholder="email@example.com"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(""); }}
-              />
-              {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 mb-4">
-              💡 This will open your device's email app with the receipt pre-filled. You'll just need to press <strong>Send</strong>.
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition">Cancel</button>
-              <button onClick={handleSend} disabled={sending} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-emerald-400 hover:bg-emerald-500 text-emerald-900 transition disabled:opacity-60 flex items-center justify-center gap-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                Open Email App
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Main: ViewRequestModal ───────────────────────────────────────────────────
-export default function ViewRequestModal({ request, onClose }) {
-  const [showEmail, setShowEmail] = useState(false);
-  const receiptRef = useRef(null);
+export default function ViewRequestModal({ request, onClose, onSave }) {
+  const [editing, setEditing]   = useState(false);
+  const [draft, setDraft]       = useState({ ...request });
+  const [saving, setSaving]     = useState(false);
 
   if (!request) return null;
 
-  const isApproved = request.status?.toLowerCase() === "approved";
+  const status     = (request.status || "").toLowerCase();
+  const isPending  = status === "pending";
+  const isApproved = status === "approved";
+  const isRejected = status === "disapproved" || status === "rejected";
 
-  // ── Download receipt as HTML/print ──────────────────────────────────────────
-  const handleDownload = () => {
+  const set = (key) => (val) => setDraft((d) => ({ ...d, [key]: val }));
+
+  // ── Save edits back to SheetDB ──────────────────────────────────────────────
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const ts = encodeURIComponent(request.timestamp || "");
+      await fetch(`https://sheetdb.io/api/v1/cyqjdv9avucvn/Timestamp/${ts}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: {
+            "Name:":                  draft.name,
+            "Department / Office":    draft.department,
+            "Immediate Head":         draft.immediateHead,
+            "Mobile Number":          draft.mobile,
+            "Date of Travel":         draft.dateOfTravel,
+            "Travel Destination":     draft.destination,
+            "Purpose of Travel":      draft.purpose,
+            "Waiting Area":           draft.waitingArea,
+            "Time of Departure":      draft.departureTime,
+            "Expected Return":        draft.expectedReturn,
+            "Number of Passengers":   draft.numPassengers,
+            "Name of Passengers":     draft.passengerNames,
+            "Project Based Travel":   draft.projectBased,
+            "Funding Type":           draft.fundingType,
+          },
+        }),
+      });
+      setEditing(false);
+      onSave && onSave(draft);
+    } catch (e) {
+      alert("Failed to save changes. Please try again.");
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const cancelEdit = () => { setDraft({ ...request }); setEditing(false); };
+
+  // ── PDF download via print-optimized HTML ───────────────────────────────────
+  const handleDownloadPDF = () => {
+    const src = isApproved ? request : draft;
     const content = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>Vehicle Request Details – ${request.name}</title>
+<title>Vehicle Request – ${src.name || "Request"}</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'IBM Plex Sans', sans-serif; background: #f8fafc; color: #334155; padding: 40px 20px; }
-  .receipt { max-width: 540px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
-  .header { background: #10b981; color: white; padding: 28px 32px; }
-  .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-  .header p { font-size: 12px; opacity: 0.85; }
-  .badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 10px; }
-  .badge.approved { background: #d1fae5; color: #065f46; }
-  .badge.pending { background: #fef3c7; color: #92400e; }
-  .badge.rejected { background: #fee2e2; color: #991b1b; }
-  .body { padding: 28px 32px; }
-  .ref { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #64748b; margin-bottom: 20px; padding: 10px 14px; background: #f1f5f9; border-radius: 8px; }
-  .section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #10b981; margin: 20px 0 8px; display: flex; align-items: center; gap: 8px; }
-  .section-title::after { content: ''; flex: 1; height: 1px; background: #d1fae5; }
-  .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 7px 0; border-bottom: 1px dashed #e2e8f0; }
-  .row:last-child { border: none; }
-  .row .lbl { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
-  .row .val { font-size: 12px; font-weight: 600; color: #334155; text-align: right; }
-  .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px 32px; text-align: center; font-size: 10px; color: #94a3b8; }
-  @media print { body { padding: 0; background: white; } .receipt { box-shadow: none; border-radius: 0; } }
+  @page { size: A4; margin: 24mm 20mm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; background: white; font-size: 12px; }
+
+  .header { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 16px; border-bottom: 2px solid #10b981; margin-bottom: 20px; }
+  .header-left h1 { font-size: 18px; font-weight: 700; color: #065f46; margin-bottom: 2px; }
+  .header-left p  { font-size: 10px; color: #64748b; }
+  .header-right   { text-align: right; }
+  .ref  { font-family: monospace; font-size: 10px; color: #64748b; margin-bottom: 4px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge.approved   { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+  .badge.pending    { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+  .badge.disapproved, .badge.rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+  .section { margin-top: 18px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .section-title { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #10b981; white-space: nowrap; }
+  .section-line  { flex: 1; height: 1px; background: #d1fae5; }
+
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 5px 4px; font-size: 11px; border-bottom: 1px dashed #e2e8f0; vertical-align: top; }
+  td.lbl { color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.06em; width: 38%; white-space: nowrap; padding-right: 12px; }
+  td.val { color: #1e293b; font-weight: 500; }
+
+  .approved-box { margin-top: 18px; background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 8px; padding: 12px 16px; }
+  .approved-box h3 { color: #065f46; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .approved-box p  { color: #047857; font-size: 10px; }
+  .assigned-row { display: flex; gap: 24px; margin-top: 8px; }
+  .assigned-item label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.08em; display: block; }
+  .assigned-item span  { font-size: 12px; font-weight: 700; color: #065f46; }
+
+  .footer { margin-top: 28px; padding-top: 10px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 9px; color: #94a3b8; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
 </style>
 </head>
 <body>
-<div class="receipt">
   <div class="header">
-    <h1>🚗 Vehicle Request Details</h1>
-    <p>DNSC Vehicle Scheduling System</p>
-    <span class="badge ${(request.status || 'pending').toLowerCase()}">${request.status || 'Pending'}</span>
+    <div class="header-left">
+      <h1>🚗 Vehicle Request</h1>
+      <p>DNSC Motor Pool Services Unit – Davao del Norte State College</p>
+    </div>
+    <div class="header-right">
+      <div class="ref">REF# ${src.referenceNo || "N/A"}</div>
+      <div class="ref">Submitted: ${src.timestamp || "—"}</div>
+      <span class="badge ${status}">${request.status || "Pending"}</span>
+    </div>
   </div>
-  <div class="body">
-    <div class="ref">REF # ${request.referenceNo || "N/A"} &nbsp;·&nbsp; Submitted: ${request.timestamp || "—"}</div>
 
-    <div class="section-title">👤 Requester Info</div>
-    <div class="row"><span class="lbl">Name</span><span class="val">${request.name || "—"}</span></div>
-    <div class="row"><span class="lbl">Email</span><span class="val">${request.email || "—"}</span></div>
-    <div class="row"><span class="lbl">Department</span><span class="val">${request.department || "—"}</span></div>
-    <div class="row"><span class="lbl">Immediate Head</span><span class="val">${request.immediateHead || "—"}</span></div>
-    <div class="row"><span class="lbl">Mobile</span><span class="val">${request.mobile || "—"}</span></div>
+  <div class="section"><span class="section-title">👤 Requester Information</span><div class="section-line"></div></div>
+  <table>
+    <tr><td class="lbl">Name</td><td class="val">${src.name || "—"}</td></tr>
+    <tr><td class="lbl">Email</td><td class="val">${src.email || "—"}</td></tr>
+    <tr><td class="lbl">Department / Office</td><td class="val">${src.department || "—"}</td></tr>
+    <tr><td class="lbl">Immediate Head</td><td class="val">${src.immediateHead || "—"}</td></tr>
+    <tr><td class="lbl">Mobile Number</td><td class="val">${src.mobile || "—"}</td></tr>
+  </table>
 
-    <div class="section-title">✈️ Travel Details</div>
-    <div class="row"><span class="lbl">Date</span><span class="val">${request.dateOfTravel || "—"}</span></div>
-    <div class="row"><span class="lbl">Destination</span><span class="val">${request.destination || "—"}</span></div>
-    <div class="row"><span class="lbl">Waiting Area</span><span class="val">${request.waitingArea || "—"}</span></div>
-    <div class="row"><span class="lbl">Departure</span><span class="val">${fmt12(request.departureTime)}</span></div>
-    <div class="row"><span class="lbl">Return</span><span class="val">${fmt12(request.expectedReturn)}</span></div>
-    <div class="row"><span class="lbl">Purpose</span><span class="val">${request.purpose || "—"}</span></div>
+  <div class="section"><span class="section-title">✈️ Travel Details</span><div class="section-line"></div></div>
+  <table>
+    <tr><td class="lbl">Date of Travel</td><td class="val">${src.dateOfTravel || "—"}</td></tr>
+    <tr><td class="lbl">Destination</td><td class="val">${src.destination || "—"}</td></tr>
+    <tr><td class="lbl">Waiting Area</td><td class="val">${src.waitingArea || "—"}</td></tr>
+    <tr><td class="lbl">Time of Departure</td><td class="val">${fmt12(src.departureTime)}</td></tr>
+    <tr><td class="lbl">Expected Return</td><td class="val">${fmt12(src.expectedReturn)}</td></tr>
+    <tr><td class="lbl">Purpose of Travel</td><td class="val">${src.purpose || "—"}</td></tr>
+  </table>
 
-    <div class="section-title">👥 Passengers</div>
-    <div class="row"><span class="lbl">Count</span><span class="val">${request.numPassengers || "—"}</span></div>
-    <div class="row"><span class="lbl">Names</span><span class="val">${(request.passengerNames || "—").replace(/\n/g, ", ")}</span></div>
-    <div class="row"><span class="lbl">Project Based</span><span class="val">${request.projectBased || "—"}</span></div>
-    ${request.projectBased === "Yes" ? `<div class="row"><span class="lbl">Funding Type</span><span class="val">${request.fundingType || "—"}</span></div>` : ""}
+  <div class="section"><span class="section-title">👥 Passengers</span><div class="section-line"></div></div>
+  <table>
+    <tr><td class="lbl">Number of Passengers</td><td class="val">${src.numPassengers || "—"}</td></tr>
+    <tr><td class="lbl">Passenger Names</td><td class="val">${(src.passengerNames || "—").replace(/\n/g, ", ")}</td></tr>
+    <tr><td class="lbl">Project Based Travel</td><td class="val">${src.projectBased || "—"}</td></tr>
+    ${src.projectBased === "Yes" ? `<tr><td class="lbl">Funding Type</td><td class="val">${src.fundingType || "—"}</td></tr>` : ""}
+  </table>
+
+  ${isApproved && (src.driver || src.vehicle) ? `
+  <div class="approved-box">
+    <h3>✅ Request Approved</h3>
+    <p>This trip has been officially approved and added to the schedule.</p>
+    <div class="assigned-row">
+      ${src.vehicle ? `<div class="assigned-item"><label>Assigned Vehicle</label><span>${src.vehicle}</span></div>` : ""}
+      ${src.driver  ? `<div class="assigned-item"><label>Assigned Driver</label><span>${src.driver}</span></div>`  : ""}
+    </div>
+  </div>` : ""}
+
+  <div class="footer">
+    Generated by DNSC Vehicle Scheduling System &nbsp;·&nbsp; This is an official vehicle request document.
   </div>
-  <div class="footer">Generated by DNSC Vehicle Scheduling System · This is an automated receipt.</div>
-</div>
-<script>window.print(); window.onafterprint = () => window.close();</script>
+
+  <script>
+    window.onload = function() { window.print(); }
+  </script>
 </body>
 </html>`;
 
     const blob = new Blob([content], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `VehicleRequest_${request.name?.replace(/\s+/g, "_") || "Receipt"}_${request.dateOfTravel || "Date"}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const url  = URL.createObjectURL(blob);
+    const win  = window.open(url, "_blank");
+    if (!win) alert("Please allow pop-ups to download the PDF.");
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
+  // ── Status color ────────────────────────────────────────────────────────────
   const statusColor = {
-    approved: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    pending:  "bg-amber-100 text-amber-700 border-amber-200",
-    rejected: "bg-red-100 text-red-700 border-red-200",
-  }[request.status?.toLowerCase()] || "bg-slate-100 text-slate-600 border-slate-200";
+    approved:    "bg-emerald-100 text-emerald-700 border-emerald-200",
+    pending:     "bg-amber-100 text-amber-700 border-amber-200",
+    disapproved: "bg-red-100 text-red-700 border-red-200",
+    rejected:    "bg-red-100 text-red-700 border-red-200",
+  }[status] || "bg-slate-100 text-slate-600 border-slate-200";
+
+  // ── Display source: use draft when editing, request otherwise ───────────────
+  const src = editing ? draft : request;
 
   return (
-    <>
-      <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-        <div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[92vh]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* ── Header ──────────────────────────────────────────────────────── */}
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 pt-6 pb-5 rounded-t-2xl shrink-0">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-emerald-100 text-xs font-semibold uppercase tracking-widest mb-1">Vehicle Request</p>
-                <h2 className="text-white text-xl font-bold leading-tight">Receipt</h2>
-                {request.referenceNo && (
-                  <p className="text-emerald-200 text-[11px] mt-1 font-mono">REF # {request.referenceNo}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${statusColor}`}>
-                  {request.status || "Pending"}
-                </span>
-                <button
-                  onClick={onClose}
-                  className="w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[92vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── Header ────────────────────────────────────────────────────────── */}
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 pt-6 pb-5 rounded-t-2xl shrink-0">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-emerald-100 text-xs font-semibold uppercase tracking-widest mb-1">DNSC Motor Pool</p>
+              <h2 className="text-white text-xl font-bold leading-tight">Vehicle Request</h2>
+              {request.referenceNo && (
+                <p className="text-emerald-200 text-[11px] mt-1 font-mono">REF # {request.referenceNo}</p>
+              )}
             </div>
-            {request.timestamp && (
-              <p className="text-emerald-200 text-[11px] mt-3 border-t border-emerald-400/40 pt-3">
-                📅 Submitted: {request.timestamp}
-              </p>
-            )}
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${statusColor}`}>
+                {request.status || "Pending"}
+              </span>
+              <button
+                onClick={onClose}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
+          {request.timestamp && (
+            <p className="text-emerald-200 text-[11px] mt-3 border-t border-emerald-400/40 pt-3">
+              📅 Submitted: {request.timestamp}
+            </p>
+          )}
+        </div>
 
-          {/* ── Body / Receipt ───────────────────────────────────────────────── */}
-          <div className="overflow-y-auto flex-1 px-6 py-4" ref={receiptRef}>
+        {/* ── Edit mode banner ──────────────────────────────────────────────── */}
+        {editing && (
+          <div className="bg-amber-50 border-b border-amber-200 px-5 py-2.5 flex items-center gap-2 shrink-0">
+            <svg className="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span className="text-xs text-amber-700 font-medium">Editing — changes will be saved to your request</span>
+          </div>
+        )}
 
-            <Section icon="👤" title="Requester Info" />
-            <Row label="Name" value={request.name} />
-            <Row label="Email" value={request.email} />
-            <Row label="Department" value={request.department} />
-            <Row label="Immediate Head" value={request.immediateHead} />
-            <Row label="Mobile" value={request.mobile} />
+        {/* ── Body ──────────────────────────────────────────────────────────── */}
+        <div className="overflow-y-auto flex-1 px-6 py-4">
 
-            <Section icon="✈️" title="Travel Details" />
-            <Row label="Date of Travel" value={request.dateOfTravel} />
-            <Row label="Destination" value={request.destination} />
-            <Row label="Waiting Area" value={request.waitingArea} />
-            <Row label="Departure" value={fmt12(request.departureTime)} />
-            <Row label="Expected Return" value={fmt12(request.expectedReturn)} />
-            <Row label="Purpose" value={request.purpose} full />
-
-            <Section icon="👥" title="Passengers" />
-            <Row label="Count" value={request.numPassengers} />
-            <Row label="Names" value={request.passengerNames?.split("\n").join(", ")} full />
-            <Row label="Project Based" value={request.projectBased} />
-            {request.projectBased === "Yes" && (
-              <Row label="Funding Type" value={request.fundingType} />
-            )}
-
-            {/* Approved banner */}
-            {isApproved && (
-              <div className="mt-5 bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center gap-3">
-                <div className="w-8 h-8 bg-emerald-400 rounded-full flex items-center justify-center shrink-0">
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          {/* ── Approved: assigned vehicle & driver box ── */}
+          {isApproved && (request.vehicle || request.driver) && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-1 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-emerald-400 rounded-full flex items-center justify-center shrink-0">
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
                 <div>
-                  <p className="text-emerald-800 text-xs font-bold">Request Approved!</p>
+                  <p className="text-emerald-800 text-xs font-bold">Request Approved</p>
                   <p className="text-emerald-600 text-[11px]">This trip has been added to the schedule.</p>
                 </div>
               </div>
-            )}
-
-            {/* Pending notice */}
-            {!isApproved && request.status?.toLowerCase() !== "rejected" && (
-              <div className="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-center gap-3">
-                <span className="text-xl leading-none">⏳</span>
-                <p className="text-amber-700 text-xs">Awaiting admin approval. You'll be notified once this is reviewed.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {request.vehicle && (
+                  <div className="bg-white rounded-lg border border-emerald-200 px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Vehicle</p>
+                    <p className="text-sm font-bold text-emerald-700">{request.vehicle}</p>
+                  </div>
+                )}
+                {request.driver && (
+                  <div className="bg-white rounded-lg border border-emerald-200 px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Driver</p>
+                    <p className="text-sm font-bold text-emerald-700">{request.driver}</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* ── Footer: Actions ──────────────────────────────────────────────── */}
-          <div className="px-6 py-4 border-t border-slate-100 shrink-0">
-            {isApproved ? (
-              <>
-                <p className="text-[11px] text-slate-400 text-center mb-3 font-medium uppercase tracking-wider">Your request is approved — save a copy</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleDownload}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    Download
-                  </button>
-                  <button
-                    onClick={() => setShowEmail(true)}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-emerald-400 hover:bg-emerald-500 text-emerald-900 transition"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                    Send to Email
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="flex gap-3">
-                <button
-                  onClick={handleDownload}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                  Download Draft
-                </button>
-                <button
-                  onClick={onClose}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-                >
-                  Close
-                </button>
+          {/* ── Approved with no assignment yet ── */}
+          {isApproved && !request.vehicle && !request.driver && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 mb-1 flex items-center gap-3">
+              <div className="w-7 h-7 bg-emerald-400 rounded-full flex items-center justify-center shrink-0">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
+              <div>
+                <p className="text-emerald-800 text-xs font-bold">Request Approved</p>
+                <p className="text-emerald-600 text-[11px]">Vehicle and driver will be assigned soon.</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Pending notice ── */}
+          {isPending && !editing && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-1 flex items-center gap-3">
+              <span className="text-xl leading-none">⏳</span>
+              <p className="text-amber-700 text-xs">Awaiting admin approval. You can still edit your request while it's pending.</p>
+            </div>
+          )}
+
+          {/* ── Rejected notice ── */}
+          {isRejected && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 mb-1 flex items-center gap-3">
+              <span className="text-xl leading-none">✕</span>
+              <p className="text-red-700 text-xs">This request was not approved. Please contact the admin for details.</p>
+            </div>
+          )}
+
+          {/* ── Requester Info ── */}
+          <Section icon="👤" title="Requester Info" />
+          {editing ? (<>
+            <EditRow label="Name"           value={draft.name}          onChange={set("name")}          placeholder="Full name" />
+            <EditRow label="Department"     value={draft.department}    onChange={set("department")}    placeholder="Department / Office" />
+            <EditRow label="Immediate Head" value={draft.immediateHead} onChange={set("immediateHead")} placeholder="Supervisor name" />
+            <EditRow label="Mobile"         value={draft.mobile}        onChange={set("mobile")}        placeholder="09xx-xxx-xxxx" />
+          </>) : (<>
+            <Row label="Name"           value={src.name} />
+            <Row label="Email"          value={src.email} />
+            <Row label="Department"     value={src.department} />
+            <Row label="Immediate Head" value={src.immediateHead} />
+            <Row label="Mobile"         value={src.mobile} />
+          </>)}
+
+          {/* ── Travel Details ── */}
+          <Section icon="✈️" title="Travel Details" />
+          {editing ? (<>
+            <EditRow label="Date of Travel"  value={draft.dateOfTravel}  onChange={set("dateOfTravel")}  type="date" />
+            <EditRow label="Destination"     value={draft.destination}   onChange={set("destination")}   placeholder="e.g. Manila, NCR" />
+            <EditRow label="Purpose"         value={draft.purpose}       onChange={set("purpose")}       type="textarea" placeholder="Purpose of travel" full />
+            <EditRow label="Waiting Area"    value={draft.waitingArea}   onChange={set("waitingArea")}   placeholder="e.g. Main Gate" />
+            <EditRow label="Departure"       value={draft.departureTime} onChange={set("departureTime")} type="time" />
+            <EditRow label="Return"          value={draft.expectedReturn}onChange={set("expectedReturn")}type="time" />
+          </>) : (<>
+            <Row label="Date of Travel"  value={src.dateOfTravel} />
+            <Row label="Destination"     value={src.destination} />
+            <Row label="Waiting Area"    value={src.waitingArea} />
+            <Row label="Departure"       value={fmt12(src.departureTime)} />
+            <Row label="Expected Return" value={fmt12(src.expectedReturn)} />
+            <Row label="Purpose"         value={src.purpose} full />
+          </>)}
+
+          {/* ── Passengers ── */}
+          <Section icon="👥" title="Passengers" />
+          {editing ? (<>
+            <EditRow label="Count"         value={draft.numPassengers}  onChange={set("numPassengers")}  type="number" placeholder="e.g. 4" />
+            <EditRow label="Names"         value={draft.passengerNames} onChange={set("passengerNames")} type="textarea" placeholder="One per line" full />
+            <EditRow label="Project Based" value={draft.projectBased}   onChange={set("projectBased")}   placeholder="Yes / No" />
+            {draft.projectBased === "Yes" && (
+              <EditRow label="Funding Type" value={draft.fundingType} onChange={set("fundingType")} placeholder="Externally / Internally Funded" />
             )}
-          </div>
+          </>) : (<>
+            <Row label="Count"         value={src.numPassengers} />
+            <Row label="Names"         value={src.passengerNames?.split("\n").join(", ")} full />
+            <Row label="Project Based" value={src.projectBased} />
+            {src.projectBased === "Yes" && <Row label="Funding Type" value={src.fundingType} />}
+          </>)}
+
+        </div>
+
+        {/* ── Footer: Actions ───────────────────────────────────────────────── */}
+        <div className="px-6 py-4 border-t border-slate-100 shrink-0">
+
+          {/* Editing actions */}
+          {editing ? (
+            <div className="flex gap-3">
+              <button
+                onClick={cancelEdit}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-emerald-400 hover:bg-emerald-500 text-emerald-900 transition disabled:opacity-60"
+              >
+                {saving ? (
+                  <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Saving…</>
+                ) : (
+                  <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>Save Changes</>
+                )}
+              </button>
+            </div>
+          ) : isApproved ? (
+            /* Approved: only Download PDF */
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleDownloadPDF}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-emerald-400 hover:bg-emerald-500 text-emerald-900 transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download as PDF
+              </button>
+            </div>
+          ) : isPending ? (
+            /* Pending: Edit + Close */
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => setEditing(true)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-amber-400 hover:bg-amber-500 text-amber-900 transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Request
+              </button>
+            </div>
+          ) : (
+            /* Rejected / other: just close */
+            <button
+              onClick={onClose}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+            >
+              Close
+            </button>
+          )}
         </div>
       </div>
-
-      {/* Email sub-modal */}
-      {showEmail && <SendEmailModal request={request} onClose={() => setShowEmail(false)} />}
-    </>
+    </div>
   );
 }
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HOW TO USE THIS IN YOUR REQUESTS TABLE / LIST:
-// ─────────────────────────────────────────────────────────────────────────────
-//
-// 1. Import it:
-//    import ViewRequestModal from "./ViewRequestModal";
-//
-// 2. Add state:
-//    const [viewingRequest, setViewingRequest] = useState(null);
-//
-// 3. Add a "View" button in each table row:
-//    <button onClick={() => setViewingRequest(row)}>
-//      View
-//    </button>
-//
-//    Where `row` is the request object with these fields:
-//    { referenceNo, status, timestamp, email, name, department,
-//      immediateHead, mobile, dateOfTravel, destination, purpose,
-//      waitingArea, departureTime, expectedReturn, numPassengers,
-//      passengerNames, projectBased, fundingType }
-//
-// 4. Render the modal:
-//    {viewingRequest && (
-//      <ViewRequestModal
-//        request={viewingRequest}
-//        onClose={() => setViewingRequest(null)}
-//      />
-//    )}

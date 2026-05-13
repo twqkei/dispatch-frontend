@@ -7,7 +7,8 @@ import Trips from "./trip";
 import "./App.css";
 import Login from "./login";
 import Logout from "./logout";
-import RequestPage from "./request";
+import RequestStatus from "./requester/status";
+import RequestPage from "./requester/request";
 
 function App() {
   const location = useLocation();
@@ -15,6 +16,7 @@ function App() {
   // Hide topbar on login page
 const hideTopbar =
   location.pathname === "/" ||
+  location.pathname === "/status" ||
   location.pathname === "/login" ||
   location.pathname === "/request" ;
 
@@ -59,7 +61,7 @@ const hideTopbar =
             </NavLink>
 
             <NavLink
-              to="/status"
+              to="/requeststatus"
               className={({ isActive }) =>
                 `pill ${isActive ? "active status" : ""}`
               }
@@ -79,10 +81,12 @@ const hideTopbar =
           <Route path="/" element={<RequestPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/status" element={<RequestStatus />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/drivers" element={<Drivers />} />
-          <Route path="/status" element={<Status />} />
+          <Route path="/requeststatus" element={<Status />} />
           <Route path="/trips/:date" element={<Trips />} />
+          <Route path="/request" element={<RequestPage />} />
         </Routes>
       </main>
 
