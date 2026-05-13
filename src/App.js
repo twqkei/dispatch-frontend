@@ -7,6 +7,7 @@ import Trips from "./trip";
 import "./App.css";
 import Login from "./login";
 import Logout from "./logout";
+import Landing from "./landing";
 
 function App() {
   const location = useLocation();
@@ -71,7 +72,8 @@ function App() {
       {/* Main content */}
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/home" element={<Home />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/drivers" element={<Drivers />} />
