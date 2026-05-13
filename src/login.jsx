@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigat } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./login.css";
 import { apiFetch } from "./api";
 
