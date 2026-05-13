@@ -132,6 +132,11 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
  
+  const total     = drivers.length;
+  const available = drivers.filter(d => d.computed_status === "AVAILABLE").length;
+  const onTrip    = drivers.filter(d => d.computed_status === "ONTRIP").length;
+  const busy      = drivers.filter(d => d.computed_status === "BUSY").length;
+ 
   return (
     <div className="p-5 bg-[#f6f7fb] min-h-screen">
  

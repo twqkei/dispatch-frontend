@@ -181,13 +181,6 @@ export default function Home() {
             ›
           </button>
         </div>
-
-      <div className="dashMeta">
-  <button className="addTripBtn" onClick={() => navigate("/trips/new")}>
-    <FaPlus style={{ marginRight: "6px" }} />
-    Add New Trip
-  </button>
-</div>
       </div>
 
       {/* MAIN GRID */}

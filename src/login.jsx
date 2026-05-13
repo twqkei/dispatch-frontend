@@ -1,97 +1,91 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "./login.css";
 import { apiFetch } from "./api";
 
 const Login = () => {
   const navigate = useNavigate();
-
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const saveTokens = ({ access, refresh }) => {
-  localStorage.setItem("access", access);
-  localStorage.setItem("refresh", refresh);
-};
+    localStorage.setItem("access", access);
+    localStorage.setItem("refresh", refresh);
+  };
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  if (!username || !password) {
-    setError("Please fill in both username and password.");
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    const data = await apiFetch("/login/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    }, { auth: false });
-    
-
-    setIsLoading(false);
-
-    if (!data?.access || !data?.refresh) {
-      setError("Login failed: tokens not returned.");
+    if (!username || !password) {
+      setError("Please fill in both username and password.");
       return;
     }
 
-    saveTokens({ access: data.access, refresh: data.refresh });
-    navigate("/home");
+    setIsLoading(true);
 
-  } catch (err) {
-    setIsLoading(false);
-    console.error("Login error:", err);
-    setError(err.message || "Network/server error. Please try again.");
-  }
-};
+    try {
+      const data = await apiFetch("/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      }, { auth: false });
+
+      setIsLoading(false);
+
+      if (!data?.access || !data?.refresh) {
+        setError("Login failed: tokens not returned.");
+        return;
+      }
+
+      saveTokens({ access: data.access, refresh: data.refresh });
+      navigate("/home");
+    } catch (err) {
+      setIsLoading(false);
+      console.error("Login error:", err);
+      setError(err.message || "Network/server error. Please try again.");
+    }
+  };
 
   return (
- <div className="login-container">
-  <div className="login-card">
-    <div className="welcome-text">
-      <h2>Welcome back!</h2>
-      <p>Enter your credentials to access your account</p>
+    <div className="login-container">
+      <div className="login-card">
+        <div className="welcome-text">
+          <h2>Welcome back!</h2>
+          <p>Enter your credentials to access your account</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="login-form">
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            disabled={isLoading}
+            className="input-field"
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoading}
+            className="input-field"
+          />
+
+          <button type="submit" disabled={isLoading} className="login-btn">
+            {isLoading ? "Logging in..." : "Log In"}
+          </button>
+
+          {error && <p className="error-text">{error}</p>}
+        </form>
+        
+      </div>
     </div>
-
-    <form onSubmit={handleLogin} className="login-form">
-      <input
-        type="text"
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        disabled={isLoading}
-        className="input-field"
-      />
-
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        disabled={isLoading}
-        className="input-field"
-      />
-
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="login-btn"
-      >
-        {isLoading ? "Logging in..." : "Log In"}
-      </button>
-
-      {error && <p className="error-text">{error}</p>}
-    </form>
-  </div>
-</div>
-);
+  );
 };
 
 export default Login;

@@ -8,12 +8,17 @@ import "./App.css";
 import Login from "./login";
 import Logout from "./logout";
 import Landing from "./landing";
+import RequestPage from "./request";
 
 function App() {
   const location = useLocation();
 
   // Hide topbar on login page
-  const hideTopbar = location.pathname === "/";
+const hideTopbar =
+  location.pathname === "/" ||
+  location.pathname === "/login" ||
+  location.pathname === "/request" ;
+
 
   return (
     <div className="app-container">
@@ -72,7 +77,7 @@ function App() {
       {/* Main content */}
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<RequestPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/home" element={<Home />} />
           <Route path="/logs" element={<Logs />} />
