@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import SendRequestModal from "../Sendrequestmodal";
 import ViewRequestModal from "../Viewrequestmodal";
 import { Link } from "react-router-dom";
+import { apiFetch } from "../api";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const getStatusConfig = (status) => {
@@ -32,7 +32,6 @@ const StatusBadge = ({ status }) => {
 function Topbar() {
   return (
     <header className="bg-white border-b border-slate-100 px-6 md:px-10 h-14 flex items-center justify-between shrink-0 z-10">
-      {/* Brand */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0">
           <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -45,9 +44,7 @@ function Topbar() {
         </div>
       </div>
 
-      {/* Right actions */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Submit Request → navigates to /status page */}
         <Link
           to="/request"
           className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition"
@@ -58,8 +55,6 @@ function Topbar() {
           <span className="hidden sm:inline">Submit Request</span>
           <span className="sm:hidden">Submit</span>
         </Link>
-
-        {/* Admin Login */}
         <a
           href="/login"
           className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs font-semibold text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition"
@@ -76,117 +71,94 @@ function Topbar() {
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
-const ALL_STATUSES = ["All", "Pending", "Approved", "Disapproved"];
+const ALL_STATUSES = ["All", "PENDING", "APPROVED", "DISAPPROVED"];
 
 export default function RequestStatus() {
-  const [data, setData] = useState([]);
-  const [search, setSearch] = useState("");
+  const [data, setData]               = useState([]);
+  const [drivers, setDrivers]         = useState([]);
+  const [vehicles, setVehicles]       = useState([]);
+  const [search, setSearch]           = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]         = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [showForm, setShowForm] = useState(false);
   const [viewingRequest, setViewingRequest] = useState(null);
 
-  const fetchData = () => {
+  const fetchData = async () => {
     setLoading(true);
-    fetch("https://sheetdb.io/api/v1/cyqjdv9avucvn")
-      .then((res) => res.json())
-      .then((d) => {
-        const sorted = [...d].sort((a, b) => new Date(b["Timestamp"]) - new Date(a["Timestamp"]));
-        setData(sorted.map((row, i) => ({
-          ...row,
-          _id:      i,
-          _driver:  row["Assigned Driver"]  || row["Driver"]  || "",
-          _vehicle: row["Assigned Vehicle"] || row["Vehicle"] || "",
-          _status:  row["STATUS"] || "Pending",
-        })));
-        setLoading(false);
-        setLastUpdated(new Date());
-      });
+    try {
+      // Fetch requests + drivers + vehicles so we can resolve names
+      const [requests, driverList, vehicleList] = await Promise.all([
+        apiFetch("/requests/"),
+        apiFetch("/drivers/"),
+        apiFetch("/vehicles/"),
+      ]);
+      const sorted = [...requests].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setData(sorted);
+      setDrivers(driverList.map((d) => ({ id: d.id, label: d.name })));
+      setVehicles(vehicleList.map((v) => ({ id: v.id, label: `${v.plate_number} — ${v.model}` })));
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  const updateField = async (rowIndex, field, value) => {
-    setData((prev) =>
-      prev.map((r, i) => i === rowIndex ? { ...r, [field]: value } : r)
-    );
-    const colMap = { _driver: "Assigned Driver", _vehicle: "Assigned Vehicle", _status: "STATUS" };
-    const col = colMap[field];
-    if (!col) return;
-    const row = data[rowIndex];
-    const ts  = encodeURIComponent(row["Timestamp"] || "");
-    try {
-      await fetch(`https://sheetdb.io/api/v1/cyqjdv9avucvn/Timestamp/${ts}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: { [col]: value } }),
-      });
-    } catch {
-      console.warn("SheetDB patch failed — change saved locally only.");
-    }
-  };
-
   const filteredData = data.filter((item) => {
-    const name   = (item["Name:"] || "").toLowerCase();
-    const dest   = (item["Travel Destination"] || "").toLowerCase();
-    const status = item._status || "";
+    const name   = (item.name || "").toLowerCase();
+    const dest   = (item.destination || "").toLowerCase();
+    const status = item.status || "";
     const matchesSearch = name.includes(search.toLowerCase()) || dest.includes(search.toLowerCase());
     const matchesStatus = statusFilter === "All" || status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const counts = ALL_STATUSES.slice(1).reduce((acc, s) => {
-    acc[s] = data.filter((d) => d._status === s).length;
+    acc[s] = data.filter((d) => d.status === s).length;
     return acc;
   }, {});
 
+  // ── KEY FIX: include driver, vehicle, and adminRemarks ──────────────────────
   const buildRequest = (item) => ({
-    referenceNo:    `VR-${String(item._id + 1).padStart(4, "0")}`,
-    status:         item._status,
-    timestamp:      item["Timestamp"],
-    email:          item["Email Address"],
-    name:           item["Name:"] || item["Name"],
-    department:     item["Department / Office"],
-    immediateHead:  item["Immediate Head"],
-    mobile:         item["Mobile Number"] || item["Contact Number"],
-    dateOfTravel:   item["Date of Travel"],
-    destination:    item["Travel Destination"],
-    purpose:        item["Purpose of Travel"],
-    waitingArea:    item["Waiting Area"],
-    departureTime:  item["Time of Departure"],
-    expectedReturn: item["Expected Return"],
-    numPassengers:  item["Number of Passengers"],
-    passengerNames: item["Name of Passengers"],
-    projectBased:   item["Project Based Travel"],
-    fundingType:    item["if yes, is it"],
-    driver:         item._driver,
-    vehicle:        item._vehicle,
+    id:             item.id,
+    referenceNo:    `VR-${String(item.id).padStart(4, "0")}`,
+    status:         item.status,
+    timestamp:      item.created_at,
+    email:          item.email,
+    name:           item.name,
+    department:     item.department,
+    immediateHead:  item.immediate_head,
+    mobile:         item.mobile,
+    dateOfTravel:   item.date_of_travel,
+    destination:    item.destination,
+    purpose:        item.purpose,
+    waitingArea:    item.waiting_area,
+    departureTime:  item.time_of_departure,
+    expectedReturn: item.expected_return,
+    numPassengers:  item.passengers,
+    passengerNames: item.passenger_names,
+    projectBased:   item.project_based ? "Yes" : "No",
+    fundingType:    item.funding_type,
+    // ↓ These three were missing before
+    driver:         drivers.find((d) => d.id === item.driver)?.label || "—",
+    vehicle:        vehicles.find((v) => v.id === item.vehicle)?.label || "—",
+    adminRemarks:   item.admin_remarks || "",
   });
 
   return (
-    // Full-screen layout so topbar sits flush at the top
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-
-      {/* ── Topbar — now actually rendered ── */}
       <Topbar />
 
-      {/* ── Page body ── */}
       <div className="flex-1 p-6">
 
-        {/* Send Request modal */}
-        {showForm && (
-          <SendRequestModal
-            onClose={() => setShowForm(false)}
-            onSubmitted={() => { setShowForm(false); setTimeout(fetchData, 1500); }}
-          />
-        )}
-
-        {/* View Receipt modal */}
         {viewingRequest && (
           <ViewRequestModal
             request={viewingRequest}
             onClose={() => setViewingRequest(null)}
+            // not admin — read-only view, no edit panel
+            isAdmin={false}
           />
         )}
 
@@ -205,7 +177,7 @@ export default function RequestStatus() {
               onClick={fetchData}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition shadow-sm"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               Refresh
@@ -223,7 +195,7 @@ export default function RequestStatus() {
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-white border cursor-pointer transition shadow-sm hover:shadow-md ${statusFilter === s ? "border-slate-400 shadow-md" : "border-slate-200"}`}
                 >
                   <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                  <span className="text-sm font-medium text-slate-700">{s}</span>
+                  <span className="text-sm font-medium text-slate-700">{cfg.label}</span>
                   <span className="text-xs font-bold text-slate-400">{counts[s] ?? 0}</span>
                 </div>
               );
@@ -248,15 +220,17 @@ export default function RequestStatus() {
                 className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 placeholder-slate-400 text-slate-700"
               />
             </div>
-
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 text-slate-700"
             >
-              {ALL_STATUSES.map((s) => <option key={s} value={s}>{s === "All" ? "All Status" : s}</option>)}
+              {ALL_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s === "All" ? "All Status" : getStatusConfig(s).label}
+                </option>
+              ))}
             </select>
-
           </div>
 
           {/* Table */}
@@ -264,7 +238,7 @@ export default function RequestStatus() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  {["#", "Date of Request", "Name", "Date of Travel", "Destination", "Purpose", "Status", "Details"].map((h) => (
+                  {["Ref #", "Date of Request", "Name", "Date of Travel", "Destination", "Purpose", "Status", "Details"].map((h) => (
                     <th key={h} className="text-left px-4 py-3 bg-slate-50/60 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -288,38 +262,48 @@ export default function RequestStatus() {
                   </tr>
                 ) : (
                   filteredData.map((item, index) => (
-                    <tr key={item._id} className="hover:bg-slate-50/70 transition-colors">
+                    <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
 
-                      <td className="px-4 py-3 text-slate-400 font-mono">
-                        #{String(index + 1).padStart(3, "0")}
+                      {/* Ref # */}
+                      <td className="px-4 py-3 font-mono text-emerald-600 font-semibold text-[11px]">
+                        VR-{String(item.id).padStart(4, "0")}
                       </td>
 
+                      {/* Date of Request */}
                       <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                        {item["Timestamp"] || "—"}
+                        {item.created_at
+                          ? new Date(item.created_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+                          : "—"}
                       </td>
 
+                      {/* Name */}
                       <td className="px-4 py-3">
                         <span className="font-medium text-slate-700 whitespace-nowrap">
-                          {item["Name:"] || "—"}
+                          {item.name || "—"}
                         </span>
                       </td>
 
+                      {/* Date of Travel */}
                       <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                        {item["Date of Travel"] || "—"}
+                        {item.date_of_travel || "—"}
                       </td>
 
+                      {/* Destination */}
                       <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                        {item["Travel Destination"] || "—"}
+                        {item.destination || "—"}
                       </td>
 
+                      {/* Purpose */}
                       <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate">
-                        {item["Purpose of Travel"] || "—"}
+                        {item.purpose || "—"}
                       </td>
 
+                      {/* Status */}
                       <td className="px-4 py-3">
-                        <StatusBadge status={item._status} />
+                        <StatusBadge status={item.status} />
                       </td>
 
+                      {/* View button */}
                       <td className="px-4 py-3">
                         <button
                           onClick={() => setViewingRequest(buildRequest(item))}
@@ -332,6 +316,7 @@ export default function RequestStatus() {
                           View
                         </button>
                       </td>
+
                     </tr>
                   ))
                 )}

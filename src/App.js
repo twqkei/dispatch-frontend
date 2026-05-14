@@ -9,6 +9,7 @@ import Login from "./login";
 import Logout from "./logout";
 import RequestStatus from "./requester/status";
 import RequestPage from "./requester/request";
+import Landing from "./landing";
 
 function App() {
   const location = useLocation();
@@ -78,7 +79,7 @@ const hideTopbar =
       {/* Main content */}
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<RequestPage />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/home" element={<Home />} />
           <Route path="/status" element={<RequestStatus />} />
