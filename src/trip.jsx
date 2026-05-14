@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { apiFetch } from "./api";
@@ -180,12 +180,12 @@ function Trip() {
   ];
 
   /* ── Load trips for this date ── */
-  const loadTrips = async () => {
-    try {
-      const data = await apiFetch(`/trips/by_date/?date=${encodeURIComponent(date)}`, { method: "GET" });
-      setTrips(Array.isArray(data) ? data : []);
-    } catch (e) { console.error(e); setTrips([]); }
-  };
+  const loadTrips = useCallback(async () => {
+  try {
+    const data = await apiFetch(`/trips/by_date/?date=${encodeURIComponent(date)}`, { method: "GET" });
+    setTrips(Array.isArray(data) ? data : []);
+  } catch (e) { console.error(e); setTrips([]); }
+}, [date]);
 
   useEffect(() => {
   loadTrips();
