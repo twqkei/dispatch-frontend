@@ -248,7 +248,6 @@ export default function RequestStatus() {
               ) : (
                 filteredData.map((item, index) => {
                   // Find the true index in data[] so updateField targets the right row
-                  const dataIndex = data.findIndex((r) => r._id === item._id);
                   return (
                     <tr key={item._id} className="hover:bg-slate-50/70 transition-colors">
 

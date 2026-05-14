@@ -339,13 +339,6 @@ function Trip() {
     saveTimeout.current[trip.id] = setTimeout(() => patchTrip(trip.id, { vehicle: selectedVehicle.id }).catch(console.error), 600);
   };
 
-  const addRow = () => {
-    const newTrip = { vehicle: null, driver: null, status: "UPCOMING", destination: "", date_requested: null, requester: "", remarks: "", passengers: 0, time_of_travel: null, date_of_trip: date };
-    apiFetch("/trips/", { method: "POST", body: JSON.stringify(newTrip) })
-      .then((data) => setTrips((prev) => [...prev, data]))
-      .catch(console.error);
-  };
-
   const deleteTrip = (id) => {
     if (!window.confirm("Delete this trip?")) return;
     apiFetch(`/trips/${id}/`, { method: "DELETE" })
