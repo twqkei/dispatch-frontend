@@ -86,7 +86,6 @@ function Topbar() {
 
 /* ── Step indicator ── */
 function StepBar({ step, back }) {
-  const progressPct = ((step - 1) / (STEPS.length - 1)) * 100;
   return (
     <div className="bg-white border-b border-slate-100 px-6 md:px-10 py-3 flex items-center gap-4 shrink-0">
       <div className="flex items-center gap-3 shrink-0">

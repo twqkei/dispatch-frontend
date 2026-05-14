@@ -188,8 +188,8 @@ function Trip() {
   };
 
   useEffect(() => {
-    loadTrips();
-  }, [date]);
+  loadTrips();
+}, [date, loadTrips]);
 
   useEffect(() => {
     (async () => {
