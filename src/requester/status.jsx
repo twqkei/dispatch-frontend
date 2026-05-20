@@ -80,7 +80,6 @@ export default function RequestStatus() {
   const [search, setSearch]           = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [loading, setLoading]         = useState(true);
-  const [lastUpdated, setLastUpdated] = useState(null);
   const [viewingRequest, setViewingRequest] = useState(null);
 
   const fetchData = async () => {
@@ -96,7 +95,6 @@ export default function RequestStatus() {
       setData(sorted);
       setDrivers(driverList.map((d) => ({ id: d.id, label: d.name })));
       setVehicles(vehicleList.map((v) => ({ id: v.id, label: `${v.plate_number} — ${v.model}` })));
-      setLastUpdated(new Date());
     } catch (err) {
       console.error(err);
     } finally {
@@ -114,11 +112,6 @@ export default function RequestStatus() {
     const matchesStatus = statusFilter === "All" || status === statusFilter;
     return matchesSearch && matchesStatus;
   });
-
-  const counts = ALL_STATUSES.slice(1).reduce((acc, s) => {
-    acc[s] = data.filter((d) => d.status === s).length;
-    return acc;
-  }, {});
 
   // ── KEY FIX: include driver, vehicle, and adminRemarks ──────────────────────
   const buildRequest = (item) => ({
