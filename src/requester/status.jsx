@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import ViewRequestModal from "../Viewrequestmodal";
+import ViewRequestModal from "./Viewrequestmodal";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api";
 
@@ -132,6 +132,7 @@ export default function RequestStatus() {
     immediateHead:  item.immediate_head,
     mobile:         item.mobile,
     dateOfTravel:   item.date_of_travel,
+    dateOfReturn:   item.date_returned,
     destination:    item.destination,
     purpose:        item.purpose,
     waitingArea:    item.waiting_area,
@@ -167,11 +168,6 @@ export default function RequestStatus() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Travel Requests</h1>
-              <p className="text-sm text-slate-400 mt-0.5">
-                {lastUpdated
-                  ? `Last synced ${lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                  : "Loading…"}
-              </p>
             </div>
             <button
               onClick={fetchData}
@@ -184,23 +180,6 @@ export default function RequestStatus() {
             </button>
           </div>
 
-          {/* Status filter pills */}
-          <div className="flex gap-3 mt-4 flex-wrap">
-            {ALL_STATUSES.slice(1).map((s) => {
-              const cfg = getStatusConfig(s);
-              return (
-                <div
-                  key={s}
-                  onClick={() => setStatusFilter(statusFilter === s ? "All" : s)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-white border cursor-pointer transition shadow-sm hover:shadow-md ${statusFilter === s ? "border-slate-400 shadow-md" : "border-slate-200"}`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                  <span className="text-sm font-medium text-slate-700">{cfg.label}</span>
-                  <span className="text-xs font-bold text-slate-400">{counts[s] ?? 0}</span>
-                </div>
-              );
-            })}
-          </div>
         </div>
 
         {/* ── Table card ── */}

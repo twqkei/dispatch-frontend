@@ -1,12 +1,35 @@
 import { useEffect, useState } from "react";
-import ViewRequestModal from "./Viewrequestmodal";
+import ViewRequestModal from "./requester/Viewrequestmodal";
 import { apiFetch } from "./api";
 
-// ─── Status config — GREEN theme ─────────────────────────────────────────────
+function fmtTravelDate(dateOfTravel, dateofReturned) {
+  if (!dateOfTravel) return "—";
+  const start = new Date(dateOfTravel + "T00:00:00");
+  const opts = { month: "short", day: "numeric" };
+
+  if (!dateofReturned) {
+    return start.toLocaleDateString([], { ...opts, year: "numeric" });
+  }
+
+  const end = new Date(dateofReturned + "T00:00:00");
+
+  if (dateOfTravel === dateofReturned) {
+    return start.toLocaleDateString([], { ...opts, year: "numeric" });
+  }
+
+  if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+    return `${start.toLocaleDateString([], opts)} – ${end.getDate()}, ${end.getFullYear()}`;
+  }
+
+  return `${start.toLocaleDateString([], opts)} – ${end.toLocaleDateString([], { ...opts, year: "numeric" })}`;
+}
+
+// ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CFG = {
   APPROVED:    { dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700 border border-emerald-200", label: "Approved" },
   PENDING:     { dot: "bg-amber-400",   badge: "bg-amber-50 text-amber-700 border border-amber-200",       label: "Pending" },
   DISAPPROVED: { dot: "bg-red-400",     badge: "bg-red-50 text-red-700 border border-red-200",             label: "Disapproved" },
+  CANCELLED:   { dot: "bg-slate-400",   badge: "bg-slate-50 text-slate-500 border border-slate-200",       label: "Cancelled" },
 };
 const getStatusCfg = (s) =>
   STATUS_CFG[(s || "").toUpperCase()] || {
@@ -26,50 +49,160 @@ const AVATAR_COLORS = [
 ];
 const avatarColor = (name = "") => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 
-// ─── Status Dropdown ──────────────────────────────────────────────────────────
-const StatusDropdown = ({ value, onChange, saving }) => {
-  const cfg = getStatusCfg(value);
+// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+const DeleteConfirmModal = ({ count, onConfirm, onCancel, loading }) => {
+  const label = count === 1 ? "this request" : `${count} requests`;
   return (
-    <div className="relative inline-flex items-center">
-      <select
-        value={value || "PENDING"}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={saving}
-        className={`appearance-none pl-6 pr-5 py-1 rounded-full text-[11px] font-semibold cursor-pointer focus:outline-none transition disabled:opacity-50 ${cfg.badge}`}
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+        <div className="h-1 w-full bg-gradient-to-r from-red-400 to-rose-500" />
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <h2 className="text-[15px] font-bold text-slate-800">
+              Delete {count === 1 ? "Request" : "Requests"}?
+            </h2>
+          </div>
+          <button onClick={onCancel} className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 transition">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-5 pb-5">
+          <p className="text-sm text-slate-500 leading-relaxed mb-1">
+            Are you sure you want to permanently delete{" "}
+            <span className="font-semibold text-slate-700">{label}</span>?
+          </p>
+          <p className="text-xs text-slate-400">
+            This action cannot be undone and will remove the data from the database.
+          </p>
+          <div className="flex gap-2 mt-5">
+            <button onClick={onCancel} className="flex-1 px-4 py-2 text-sm font-medium bg-slate-50 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-100 transition">
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className="flex-1 px-4 py-2 text-sm font-semibold bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white rounded-xl transition flex items-center justify-center gap-2 shadow-sm shadow-red-200"
+            >
+              {loading ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              )}
+              Delete {count > 1 ? `${count} Records` : "Record"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Status Dropdown ──────────────────────────────────────────────────────────
+const STATUS_OPTS = [
+  { value: "PENDING",     label: "Pending",     dot: "bg-amber-400",   badge: "bg-amber-50 text-amber-700 border-amber-200",     optBg: "bg-amber-50",   optText: "text-amber-700",   optHover: "hover:bg-amber-100" },
+  { value: "APPROVED",    label: "Approved",    dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700 border-emerald-200", optBg: "bg-emerald-50", optText: "text-emerald-700", optHover: "hover:bg-emerald-100" },
+  { value: "DISAPPROVED", label: "Disapproved", dot: "bg-red-400",     badge: "bg-red-50 text-red-700 border-red-200",           optBg: "bg-red-50",     optText: "text-red-700",     optHover: "hover:bg-red-100" },
+  { value: "CANCELLED",   label: "Cancelled",   dot: "bg-slate-400",   badge: "bg-slate-50 text-slate-600 border-slate-200",     optBg: "bg-slate-50",   optText: "text-slate-600",   optHover: "hover:bg-slate-100" },
+];
+
+const StatusDropdown = ({ value, onChange, saving, disabled }) => {
+  const [open, setOpen] = useState(false);
+  const current = STATUS_OPTS.find((o) => o.value === (value || "PENDING")) || STATUS_OPTS[0];
+  const isCancelled = (value || "").toUpperCase() === "CANCELLED";
+
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        disabled={saving || disabled}
+        onClick={() => !disabled && setOpen((v) => !v)}
+        className={`inline-flex items-center gap-1.5 pl-2.5 pr-2 py-1 rounded-full text-[11px] font-semibold border focus:outline-none transition
+          ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+          ${current.badge}`}
       >
-        <option value="PENDING">Pending</option>
-        <option value="APPROVED">Approved</option>
-        <option value="DISAPPROVED">Disapproved</option>
-      </select>
-      <span className={`pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      <svg className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-      </svg>
+        {/* Lock icon replaces chevron for cancelled */}
+        {isCancelled ? (
+          <svg className="w-2.5 h-2.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        ) : (
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${current.dot}`} />
+        )}
+        {current.label}
+        {!disabled && (
+          <svg className="w-2.5 h-2.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        )}
+      </button>
+
       {saving && (
         <svg className="absolute -right-5 top-1/2 -translate-y-1/2 w-3 h-3 animate-spin text-slate-400" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
         </svg>
       )}
+
+      {open && !disabled && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute z-20 mt-1 left-0 w-36 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+            {STATUS_OPTS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-[11px] font-semibold transition
+                  ${opt.optHover}
+                  ${value === opt.value ? `${opt.optBg} ${opt.optText}` : "text-slate-600"}`}
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${opt.dot}`} />
+                {opt.label}
+                {value === opt.value && (
+                  <svg className={`w-3 h-3 ml-auto ${opt.optText}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
 // ─── Assign Dropdown ──────────────────────────────────────────────────────────
-const AssignDropdown = ({ value, options, placeholder, onChange, saving }) => (
+const AssignDropdown = ({ value, options, placeholder, onChange, saving, disabled }) => (
   <div className="relative">
     <select
       value={value || ""}
       onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
-      disabled={saving}
-      className="appearance-none w-full pl-2.5 pr-6 py-1 rounded-lg text-[11px] font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 cursor-pointer disabled:opacity-50 min-w-[110px]"
+      disabled={saving || disabled}
+      className="appearance-none w-full pl-2.5 pr-6 py-1 rounded-lg text-[11px] font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-w-[110px]"
     >
       <option value="">{placeholder}</option>
       {options.map((o) => (
         <option key={o.id} value={o.id}>{o.label}</option>
       ))}
     </select>
-    <svg className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+    <svg
+      className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-slate-400"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+    >
       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
     </svg>
   </div>
@@ -78,33 +211,58 @@ const AssignDropdown = ({ value, options, placeholder, onChange, saving }) => (
 // ─── Sort icon ────────────────────────────────────────────────────────────────
 const SortIcon = ({ col, sortCol, sortDir }) => {
   if (sortCol !== col)
-    return <svg className="w-3 h-3 opacity-20 ml-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" /></svg>;
-  return sortDir === "asc"
-    ? <svg className="w-3 h-3 ml-1 inline text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
-    : <svg className="w-3 h-3 ml-1 inline text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>;
+    return (
+      <svg className="w-3 h-3 opacity-20 ml-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    );
+  return sortDir === "asc" ? (
+    <svg className="w-3 h-3 ml-1 inline text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+    </svg>
+  ) : (
+    <svg className="w-3 h-3 ml-1 inline text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
+  );
 };
 
-// ─── Inline action buttons (like reference screenshot) ───────────────────────
-const ActionButtons = ({ onView, onEdit, onDelete }) => (
+// ─── Inline action buttons ────────────────────────────────────────────────────
+const ActionButtons = ({ onView, onEdit, disableEdit }) => (
   <div className="flex items-center gap-1.5">
-    <button onClick={onView} title="View"
-      className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 transition">
+    {/* View — always active */}
+    <button
+      onClick={onView}
+      title="View"
+      className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 transition"
+    >
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
       </svg>
     </button>
-    <button onClick={onEdit} title="Edit / Admin Remarks"
-      className="w-7 h-7 rounded-lg flex items-center justify-center bg-sky-50 hover:bg-sky-100 text-sky-600 border border-sky-200 transition">
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-      </svg>
-    </button>
-    <button onClick={onDelete} title="Delete"
-      className="w-7 h-7 rounded-lg flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 transition">
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-      </svg>
+
+    {/* Edit — locked icon when disabled */}
+    <button
+      onClick={!disableEdit ? onEdit : undefined}
+      disabled={disableEdit}
+      title={disableEdit ? "Locked — cannot edit this request" : "Edit / Admin Remarks"}
+      className={`w-7 h-7 rounded-lg flex items-center justify-center border transition
+        ${disableEdit
+          ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+          : "bg-sky-50 hover:bg-sky-100 text-sky-600 border-sky-200 cursor-pointer"
+        }`}
+    >
+      {disableEdit ? (
+        // Lock icon — communicates WHY it's disabled
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      ) : (
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      )}
     </button>
   </div>
 );
@@ -118,22 +276,23 @@ const SORTABLE_COLS = [
   { key: "status",         label: "Status" },
 ];
 
-const ALL_STATUSES = ["All", "PENDING", "APPROVED", "DISAPPROVED"];
+const ALL_STATUSES = ["All", "PENDING", "APPROVED", "DISAPPROVED", "CANCELLED"];
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function AdminRequestStatus() {
-  const [data, setData]                 = useState([]);
-  const [drivers, setDrivers]           = useState([]);
-  const [vehicles, setVehicles]         = useState([]);
-  const [search, setSearch]             = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [loading, setLoading]           = useState(true);
-  const [lastUpdated, setLastUpdated]   = useState(null);
-  const [modalState, setModalState]     = useState(null);
-  const [saving, setSaving]             = useState({});
-  const [selected, setSelected]         = useState(new Set());
-  const [sortCol, setSortCol]           = useState("date_of_travel");
-  const [sortDir, setSortDir]           = useState("desc");
+  const [data, setData]                   = useState([]);
+  const [drivers, setDrivers]             = useState([]);
+  const [vehicles, setVehicles]           = useState([]);
+  const [search, setSearch]               = useState("");
+  const [statusFilter, setStatusFilter]   = useState("All");
+  const [loading, setLoading]             = useState(true);
+  const [modalState, setModalState]       = useState(null);
+  const [saving, setSaving]               = useState({});
+  const [selected, setSelected]           = useState(new Set());
+  const [sortCol, setSortCol]             = useState("date_of_travel");
+  const [sortDir, setSortDir]             = useState("desc");
+  const [deleting, setDeleting]           = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -146,7 +305,6 @@ export default function AdminRequestStatus() {
       setData(requests);
       setDrivers(driverList.map((d) => ({ id: d.id, label: d.name })));
       setVehicles(vehicleList.map((v) => ({ id: v.id, label: `${v.plate_number} — ${v.model}` })));
-      setLastUpdated(new Date());
     } catch (err) {
       console.error(err);
     } finally {
@@ -165,7 +323,13 @@ export default function AdminRequestStatus() {
       return { ...prev, request: { ...prev.request, [field]: value } };
     });
     try {
-      await apiFetch(`/requests/${id}/`, { method: "PATCH", body: JSON.stringify({ [field]: value }) });
+      if (field === "status" && value === "APPROVED") {
+        await apiFetch(`/requests/${id}/approve/`, { method: "POST" });
+      } else if (field === "status" && value === "DISAPPROVED") {
+        await apiFetch(`/requests/${id}/disapprove/`, { method: "POST" });
+      } else {
+        await apiFetch(`/requests/${id}/`, { method: "PATCH", body: JSON.stringify({ [field]: value }) });
+      }
     } catch (err) {
       console.error("Patch failed:", err);
       fetchAll();
@@ -185,6 +349,7 @@ export default function AdminRequestStatus() {
     immediateHead:  item.immediate_head,
     mobile:         item.mobile,
     dateOfTravel:   item.date_of_travel,
+    dateOfReturn:   item.date_returned,
     destination:    item.destination,
     purpose:        item.purpose,
     waitingArea:    item.waiting_area,
@@ -202,6 +367,38 @@ export default function AdminRequestStatus() {
   const handleSort = (col) => {
     setSortDir((d) => sortCol === col ? (d === "asc" ? "desc" : "asc") : "asc");
     setSortCol(col);
+  };
+
+  const handleBulkDelete = () => {
+    if (selected.size === 0) return;
+    setDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    const ids = [...selected];
+    setDeleting(true);
+    try {
+      await Promise.all(
+        ids.map(async (id) => {
+          const req = data.find((r) => r.id === id);
+          if (req?.trip) {
+            try {
+              await apiFetch(`/trips/${req.trip}/`, { method: "DELETE" });
+            } catch (err) {
+              console.warn(`Trip ${req.trip} delete failed (may not exist):`, err);
+            }
+          }
+          await apiFetch(`/requests/${id}/`, { method: "DELETE" });
+        })
+      );
+      setData((prev) => prev.filter((r) => !selected.has(r.id)));
+      setSelected(new Set());
+    } catch (err) {
+      console.error("Bulk delete failed:", err);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm(false);
+    }
   };
 
   const processedData = [...data]
@@ -230,26 +427,10 @@ export default function AdminRequestStatus() {
     return acc;
   }, {});
 
-  const openModal  = (item, mode = "view") => setModalState({ request: buildRequest(item), mode });
+  const openModal   = (item, mode = "view") => setModalState({ request: buildRequest(item), mode });
   const allSelected = processedData.length > 0 && processedData.every((r) => selected.has(r.id));
   const toggleAll   = () => setSelected(allSelected ? new Set() : new Set(processedData.map((r) => r.id)));
   const toggleOne   = (id) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
-
-  const handleAdminSave = async (updatedRequest) => {
-    const id = updatedRequest.id;
-    if (!id) return;
-    try {
-      await apiFetch(`/requests/${id}/`, {
-        method: "PATCH",
-        body: JSON.stringify({ admin_remarks: updatedRequest.adminRemarks, status: updatedRequest.status }),
-      });
-      setData((prev) => prev.map((r) => r.id === id
-        ? { ...r, admin_remarks: updatedRequest.adminRemarks, status: updatedRequest.status }
-        : r
-      ));
-    } catch (err) { console.error("Admin save failed", err); }
-    setModalState(null);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6" style={{ fontFamily: "'DM Sans', 'Nunito', sans-serif" }}>
@@ -260,7 +441,15 @@ export default function AdminRequestStatus() {
           initialMode={modalState.mode}
           isAdmin
           onClose={() => setModalState(null)}
-          onAdminSave={handleAdminSave}
+        />
+      )}
+
+      {deleteConfirm && (
+        <DeleteConfirmModal
+          count={selected.size}
+          loading={deleting}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteConfirm(false)}
         />
       )}
 
@@ -268,24 +457,28 @@ export default function AdminRequestStatus() {
       <div className="mb-5 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-slate-800">Travel Requests</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
-            {lastUpdated ? `Synced ${lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Loading…"}
-          </p>
         </div>
 
-        {/* Status pills */}
+        {/* Status pills — now includes CANCELLED */}
         <div className="flex gap-2 flex-wrap">
           {ALL_STATUSES.slice(1).map((s) => {
             const cfg    = getStatusCfg(s);
             const active = statusFilter === s;
             return (
-              <button key={s} onClick={() => setStatusFilter(active ? "All" : s)}
+              <button
+                key={s}
+                onClick={() => setStatusFilter(active ? "All" : s)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border text-xs font-medium transition shadow-sm ${
-                  active ? "border-emerald-400 ring-1 ring-emerald-200 text-emerald-700" : "border-slate-200 text-slate-600 hover:border-slate-300"
-                }`}>
+                  active
+                    ? "border-emerald-400 ring-1 ring-emerald-200 text-emerald-700"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
                 <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                 {cfg.label}
-                <span className={`font-bold ml-0.5 ${active ? "text-emerald-600" : "text-slate-400"}`}>{counts[s] ?? 0}</span>
+                <span className={`font-bold ml-0.5 ${active ? "text-emerald-600" : "text-slate-400"}`}>
+                  {counts[s] ?? 0}
+                </span>
               </button>
             );
           })}
@@ -301,37 +494,67 @@ export default function AdminRequestStatus() {
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
             </svg>
-            <input type="text" placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-4 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-200 placeholder-slate-400 text-slate-700 w-52" />
+            <input
+              type="text"
+              placeholder="Search…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 pr-4 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-200 placeholder-slate-400 text-slate-700 w-52"
+            />
           </div>
 
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-200 text-slate-700">
-            {ALL_STATUSES.map((s) => <option key={s} value={s}>{s === "All" ? "All Status" : getStatusCfg(s).label}</option>)}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-200 text-slate-700"
+          >
+            {ALL_STATUSES.map((s) => (
+              <option key={s} value={s}>{s === "All" ? "All Status" : getStatusCfg(s).label}</option>
+            ))}
           </select>
 
-          {/* Sort control */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-slate-400">Sort:</span>
-            <select value={sortCol} onChange={(e) => setSortCol(e.target.value)}
-              className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-200 text-slate-700">
-              {SORTABLE_COLS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+            <select
+              value={sortCol}
+              onChange={(e) => setSortCol(e.target.value)}
+              className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-200 text-slate-700"
+            >
+              {SORTABLE_COLS.map((c) => (
+                <option key={c.key} value={c.key}>{c.label}</option>
+              ))}
             </select>
-            <button onClick={() => setSortDir((d) => d === "asc" ? "desc" : "asc")}
-              className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 text-slate-600 transition">
+            <button
+              onClick={() => setSortDir((d) => d === "asc" ? "desc" : "asc")}
+              className="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 text-slate-600 transition"
+            >
               {sortDir === "asc" ? "↑ Asc" : "↓ Desc"}
             </button>
           </div>
 
           <div className="ml-auto flex items-center gap-2">
             {selected.size > 0 && (
-              <span className="text-xs text-slate-500 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200">
-                {selected.size} selected
-              </span>
+              <>
+                <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200">
+                  {selected.size} selected
+                </span>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={deleting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg text-xs font-medium text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </button>
+              </>
             )}
             <span className="text-xs text-slate-400">{processedData.length} / {data.length}</span>
-            <button onClick={fetchAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition">
+            <button
+              onClick={fetchAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+            >
               <svg className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
@@ -340,10 +563,10 @@ export default function AdminRequestStatus() {
           </div>
         </div>
 
-        {/* ── Table — table-fixed, no overflow-x, columns proportional ── */}
+        {/* ── Table ── */}
         <table className="w-full text-xs table-fixed">
           <colgroup>
-            <col style={{ width: "32px" }} />
+            <col style={{ width: "30px" }} />
             <col style={{ width: "16%" }} />
             <col style={{ width: "7%" }} />
             <col style={{ width: "9%" }} />
@@ -352,18 +575,22 @@ export default function AdminRequestStatus() {
             <col style={{ width: "11%" }} />
             <col style={{ width: "11%" }} />
             <col style={{ width: "13%" }} />
-            <col style={{ width: "9%" }} />
+            <col style={{ width: "7%" }} />
           </colgroup>
 
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               <th className="px-3 py-3">
-                <input type="checkbox" checked={allSelected} onChange={toggleAll}
-                  className="w-3.5 h-3.5 rounded border-slate-300 accent-emerald-500 cursor-pointer" />
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                  className="w-3.5 h-3.5 rounded border-slate-300 accent-emerald-500 cursor-pointer"
+                />
               </th>
               {[
                 { label: "Name",        col: "name" },
-                { label: "Order No",    col: null },
+                { label: "Date",        col: "created_at" },
                 { label: "Department",  col: "department" },
                 { label: "Travel Date", col: "date_of_travel" },
                 { label: "Destination", col: "destination" },
@@ -372,9 +599,11 @@ export default function AdminRequestStatus() {
                 { label: "Vehicle",     col: null },
                 { label: "Action",      col: null },
               ].map(({ label, col }) => (
-                <th key={label}
+                <th
+                  key={label}
                   onClick={() => col && handleSort(col)}
-                  className={`px-3 py-3 text-left select-none whitespace-nowrap ${col ? "cursor-pointer hover:text-emerald-600" : ""}`}>
+                  className={`px-3 py-3 text-left select-none whitespace-nowrap ${col ? "cursor-pointer hover:text-emerald-600" : ""}`}
+                >
                   {label}
                   {col && <SortIcon col={col} sortCol={sortCol} sortDir={sortDir} />}
                 </th>
@@ -387,7 +616,9 @@ export default function AdminRequestStatus() {
               ? Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     {Array.from({ length: 10 }).map((__, j) => (
-                      <td key={j} className="px-3 py-4"><div className="h-3 bg-slate-100 rounded" /></td>
+                      <td key={j} className="px-3 py-4">
+                        <div className="h-3 bg-slate-100 rounded" />
+                      </td>
                     ))}
                   </tr>
                 ))
@@ -405,40 +636,64 @@ export default function AdminRequestStatus() {
                 </tr>
               )
               : processedData.map((item) => {
-                  const isRejected = (item.status || "").toUpperCase() === "DISAPPROVED";
-                  const isSelected = selected.has(item.id);
-                  return (
-                    <tr key={item.id}
-                      className={`transition-colors ${
-                        isRejected ? "bg-red-50/50 hover:bg-red-50" :
-                        isSelected ? "bg-emerald-50/40" :
-                        "hover:bg-slate-50/80"
-                      } ${isRejected ? "border-l-2 border-l-red-300" : ""}`}>
+                  const statusUp      = (item.status || "").toUpperCase();
+                  const isCancelled   = statusUp === "CANCELLED";
+                  const isDisapproved = statusUp === "DISAPPROVED";
+                  const isLocked      = isCancelled || isDisapproved;
+                  const isSelected    = selected.has(item.id);
 
-                      {/* Checkbox */}
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`transition-colors ${
+                        isCancelled
+                          ? "opacity-60"           // dim the whole row
+                          : isDisapproved
+                          ? "bg-red-50/50 hover:bg-red-50 border-l-2 border-l-red-300"
+                          : isSelected
+                          ? "bg-emerald-50/40"
+                          : "hover:bg-slate-50/80"
+                      }`}
+                      style={
+                        isCancelled
+                          ? {
+                              backgroundImage:
+                                "repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(148,163,184,0.08) 6px, rgba(148,163,184,0.08) 12px)",
+                            }
+                          : undefined
+                      }
+                    >
                       <td className="px-3 py-3.5">
-                        <input type="checkbox" checked={isSelected} onChange={() => toggleOne(item.id)}
-                          className="w-3.5 h-3.5 rounded border-slate-300 accent-emerald-500 cursor-pointer" />
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => !isCancelled && toggleOne(item.id)}
+                          className="w-3.5 h-3.5 rounded border-slate-300 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                        />
                       </td>
 
-                      {/* Name + subtitle (department) */}
+                      {/* Name */}
                       <td className="px-3 py-3.5">
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColor(item.name)} flex items-center justify-center text-white text-[11px] font-bold shrink-0`}>
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0
+                              ${isCancelled
+                                ? "bg-slate-300"
+                                : `bg-gradient-to-br ${avatarColor(item.name)}`
+                              }`}
+                          >
                             {(item.name || "?")[0].toUpperCase()}
                           </div>
                           <div className="min-w-0">
                             <p className="font-semibold text-slate-700 truncate text-[12px] leading-tight">{item.name || "—"}</p>
-                            <p className="text-[10px] text-slate-400 truncate leading-tight">{item.department || "—"}</p>
+                            <p className="text-[10px] text-slate-400 truncate leading-tight">{item.immediate_head || "—"}</p>
                           </div>
                         </div>
                       </td>
 
-                      {/* Ref # */}
-                      <td className="px-3 py-3.5">
-                        <span className="font-mono text-emerald-600 font-semibold text-[11px]">
-                          #{String(item.id).padStart(4, "0")}
-                        </span>
+                      {/* Created date */}
+                      <td className="px-3 py-3.5 text-slate-500 text-[11px] whitespace-nowrap">
+                        {fmtTravelDate(item.created_at || "—")}
                       </td>
 
                       {/* Department */}
@@ -448,9 +703,7 @@ export default function AdminRequestStatus() {
 
                       {/* Travel Date */}
                       <td className="px-3 py-3.5 text-slate-600 text-[11px] whitespace-nowrap">
-                        {item.date_of_travel
-                          ? new Date(item.date_of_travel + "T00:00:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
-                          : "—"}
+                        {fmtTravelDate(item.date_of_travel, item.date_of_returned)}
                       </td>
 
                       {/* Destination */}
@@ -464,6 +717,7 @@ export default function AdminRequestStatus() {
                           value={item.status}
                           saving={saving[`${item.id}_status`]}
                           onChange={(val) => patchRequest(item.id, "status", val)}
+                          disabled={isLocked}
                         />
                       </td>
 
@@ -475,6 +729,7 @@ export default function AdminRequestStatus() {
                           placeholder="— Driver —"
                           saving={saving[`${item.id}_driver`]}
                           onChange={(val) => patchRequest(item.id, "driver", val)}
+                          disabled={isLocked}
                         />
                       </td>
 
@@ -486,21 +741,16 @@ export default function AdminRequestStatus() {
                           placeholder="— Vehicle —"
                           saving={saving[`${item.id}_vehicle`]}
                           onChange={(val) => patchRequest(item.id, "vehicle", val)}
+                          disabled={isLocked}
                         />
                       </td>
 
-                      {/* Actions — inline icon buttons */}
+                      {/* Actions */}
                       <td className="px-3 py-3.5">
                         <ActionButtons
                           onView={() => openModal(item, "view")}
                           onEdit={() => openModal(item, "adminEdit")}
-                          onDelete={() => {
-                            if (window.confirm(`Delete request #${String(item.id).padStart(4, "0")}?`)) {
-                              apiFetch(`/requests/${item.id}/`, { method: "DELETE" })
-                                .then(() => setData((prev) => prev.filter((r) => r.id !== item.id)))
-                                .catch(console.error);
-                            }
-                          }}
+                          disableEdit={isLocked}
                         />
                       </td>
                     </tr>
@@ -510,21 +760,11 @@ export default function AdminRequestStatus() {
           </tbody>
         </table>
 
-        {/* Footer */}
         {!loading && data.length > 0 && (
           <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-400">Showing {processedData.length} of {data.length}</span>
-            <div className="flex items-center gap-3 text-xs text-slate-400">
-              {ALL_STATUSES.slice(1).map((s) => {
-                const cfg = getStatusCfg(s);
-                return (
-                  <span key={s} className="flex items-center gap-1">
-                    <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                    {cfg.label}: <strong className="text-slate-600 ml-0.5">{counts[s]}</strong>
-                  </span>
-                );
-              })}
-            </div>
+            <span className="text-xs text-slate-400">
+              Showing {processedData.length} of {data.length}
+            </span>
           </div>
         )}
       </div>

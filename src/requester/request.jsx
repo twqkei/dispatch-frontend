@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api"; // adjust path if needed
 
@@ -6,11 +6,19 @@ const STEPS = ["Requester & Travel Details", "Passengers & Confirmation"];
 
 const initialForm = {
   email: "", name: "", department: "", immediateHead: "", mobile: "",
-  dateOfTravel: "", destination: "", purpose: "", waitingArea: "",
+  dateOfTravel: "", dateReturned: "", destination: "", purpose: "", waitingArea: "",
   departureTime: "", expectedReturn: "", numPassengers: "", passengerNames: "",
-  projectBased: "", fundingType: "", acknowledgement: false, attachments: [],
+  projectBased: "", fundingType: "", acknowledgement: false, notes: "", attachments: [],
 };
 
+/* ── Validation helpers ── */
+const isValidMobile = (v) => /^\d{11}$/.test(v.replace(/[-\s]/g, ""));
+const isValidEmail  = (v) => v === "" || /^[^\s@]+@gmail\.com$/i.test(v.trim());
+
+const countPassengerNames = (text) =>
+  text.split("\n").map((l) => l.replace(/^\d+\.\s*/, "").trim()).filter(Boolean).length;
+
+/* ── Field wrapper ── */
 const Field = ({ label, required, error, hint, children, className = "" }) => (
   <div className={`flex flex-col gap-1.5 ${className}`}>
     <div className="flex items-center justify-between">
@@ -20,16 +28,36 @@ const Field = ({ label, required, error, hint, children, className = "" }) => (
       {hint && <span className="text-[10px] text-slate-400 italic">{hint}</span>}
     </div>
     {children}
-    {error && (
-      <p className="text-rose-400 text-xs flex items-center gap-1">
-        <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-        </svg>
-        {error}
-      </p>
-    )}
+    {error && <DangerAlert message={error} />}
   </div>
 );
+
+/* ── Danger alert ── */
+const DangerAlert = ({ message }) => (
+  <div className="flex items-start gap-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg">
+    <svg className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+    </svg>
+    <p className="text-rose-600 text-xs font-medium leading-snug">{message}</p>
+  </div>
+);
+
+/* ── Trip duration badge ── */
+const TripDurationBadge = ({ from, to }) => {
+  if (!from || !to) return null;
+  const diff = Math.round((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return null;
+  if (diff === 0) return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-full text-[10px] font-semibold text-blue-600">
+      📅 Same-day trip
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-[10px] font-semibold text-emerald-700">
+      🗓 {diff} day{diff !== 1 ? "s" : ""} trip
+    </span>
+  );
+};
 
 const inputCls = (err) =>
   `w-full px-3.5 py-2.5 text-sm rounded-xl border focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100/60 text-slate-700 bg-white placeholder-slate-300 transition-all duration-200 ${
@@ -81,6 +109,66 @@ function Topbar() {
         </a>
       </div>
     </header>
+  );
+}
+
+/* ── Department autocomplete ── */
+function DepartmentInput({ value, onChange, error }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(value || "");
+  const ref = useRef(null);
+
+  const departments = [
+    "IAAS","IADS","ILEGG","IC","ITED","OSDS","Cashier","REP","HRMO","PSU","Supply",
+    "PRMO","QA","PIO","Record Management Office","BASD","VPAA","VPAF","VPREP","Extension Division",
+    "Research Development Division","Production Division","Carmen Campus","TBI","Engineering Office",
+    "GAD","Internalization","Office of the President","Quality Assurance","GASSO","Faculty Association",
+    "Admin Services","Registrar","Accounting Office","GSU","Other Agency","OP","Budget","BOARD SEC",
+    "External Visitors","Samal Campus","BAC","SETBI","Admission Office",
+  ];
+
+  const filtered = query.trim()
+    ? departments.filter((d) => d.toLowerCase().includes(query.toLowerCase()))
+    : departments;
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => { setQuery(value || ""); }, [value]);
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        className={inputCls(error)}
+        placeholder="e.g. ICT Department"
+        value={query}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+          {filtered.map((d) => (
+            <li
+              key={d}
+              onMouseDown={() => { onChange(d); setQuery(d); setOpen(false); }}
+              className={`px-4 py-2.5 text-sm cursor-pointer transition-colors hover:bg-emerald-50 hover:text-emerald-700 ${
+                value === d ? "bg-emerald-50 text-emerald-700 font-semibold" : "text-slate-700"
+              }`}
+            >
+              {d}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -143,28 +231,64 @@ export default function RequestPage() {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    setForm((f) => ({ ...f, [key]: val }));
+    setErrors((e) => { const next = { ...e }; delete next[key]; return next; });
+  };
 
   const validateStep = () => {
     const e = {};
+
     if (step === 1) {
-      if (!form.name.trim())         e.name         = "Required";
-      if (!form.department.trim())   e.department   = "Required";
-      if (!form.immediateHead.trim())e.immediateHead = "Required";
-      if (!form.mobile.trim())       e.mobile       = "Required";
-      if (!form.dateOfTravel)        e.dateOfTravel = "Required";
-      if (!form.destination.trim())  e.destination  = "Required";
-      if (!form.purpose.trim())      e.purpose      = "Required";
-      if (!form.waitingArea.trim())  e.waitingArea  = "Required";
-      if (!form.departureTime)       e.departureTime = "Required";
-      if (!form.expectedReturn)      e.expectedReturn = "Required";
+      if (!form.name.trim())          e.name          = "Full name is required.";
+      if (!form.department.trim())    e.department    = "Department is required.";
+      if (!form.immediateHead.trim()) e.immediateHead = "Immediate head is required.";
+
+      if (!form.mobile.trim()) {
+        e.mobile = "Mobile number is required.";
+      } else if (!isValidMobile(form.mobile)) {
+        e.mobile = "Mobile number must be exactly 11 digits (e.g. 09171234567).";
+      }
+
+      if (form.email.trim() && !isValidEmail(form.email)) {
+        e.email = "Email must be a valid Gmail address ending in @gmail.com.";
+      }
+
+      if (!form.dateOfTravel)  e.dateOfTravel  = "Date of travel is required.";
+      if (!form.dateReturned)  e.dateReturned  = "Date of return is required.";
+      if (form.dateOfTravel && form.dateReturned && form.dateReturned < form.dateOfTravel) {
+        e.dateReturned = "Return date cannot be earlier than the travel date.";
+      }
+
+      if (!form.destination.trim()) e.destination   = "Destination is required.";
+      if (!form.purpose.trim())     e.purpose       = "Purpose of travel is required.";
+      if (!form.waitingArea.trim()) e.waitingArea   = "Waiting / pickup area is required.";
+      if (!form.departureTime)      e.departureTime = "Departure time is required.";
+      if (!form.expectedReturn)     e.expectedReturn = "Expected return time is required.";
     }
+
     if (step === 2) {
-      if (!form.numPassengers)        e.numPassengers  = "Required";
-      if (!form.passengerNames.trim())e.passengerNames = "Required";
-      if (!form.projectBased)         e.projectBased   = "Required";
-      if (!form.acknowledgement)      e.acknowledgement = "You must acknowledge to submit.";
+      const declared = parseInt(form.numPassengers, 10);
+
+      if (!form.numPassengers) {
+        e.numPassengers = "Number of passengers is required.";
+      } else if (isNaN(declared) || declared < 1) {
+        e.numPassengers = "Please enter a valid number of passengers (at least 1).";
+      }
+
+      if (!form.passengerNames.trim()) {
+        e.passengerNames = "Passenger names are required.";
+      } else if (!isNaN(declared) && declared >= 1) {
+        const listed = countPassengerNames(form.passengerNames);
+        if (listed !== declared) {
+          e.passengerNames = `You declared ${declared} passenger${declared !== 1 ? "s" : ""} but listed ${listed} name${listed !== 1 ? "s" : ""}. Please make them match.`;
+        }
+      }
+
+      if (!form.projectBased)    e.projectBased   = "Please indicate if this is project-based travel.";
+      if (!form.acknowledgement) e.acknowledgement = "You must acknowledge to submit.";
     }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -173,38 +297,40 @@ export default function RequestPage() {
   const back = () => { setErrors({}); setStep(1); };
 
   const handleSubmit = async () => {
-  if (!validateStep()) return;
-  setSubmitting(true);
-  try {
-    await apiFetch("/requests/", {
-      method: "POST",
-      body: JSON.stringify({
-        name:              form.name,
-        email:             form.email,
-        department:        form.department,
-        immediate_head:    form.immediateHead,
-        mobile:            form.mobile,
-        date_of_travel:    form.dateOfTravel,
-        destination:       form.destination,
-        purpose:           form.purpose,
-        waiting_area:      form.waitingArea,
-        time_of_departure: form.departureTime,
-        expected_return:   form.expectedReturn,
-        passengers:        form.numPassengers,
-        passenger_names:   form.passengerNames,
-        project_based:     form.projectBased === "Yes",
-        funding_type:      form.projectBased === "Yes" ? form.fundingType : "",
-      }),
-    }, { auth: false }); // no token needed for public form
+    if (!validateStep()) return;
+    setSubmitting(true);
+    try {
+      await apiFetch("/requests/", {
+        method: "POST",
+        body: JSON.stringify({
+          name:              form.name,
+          email:             form.email || "",
+          department:        form.department,
+          immediate_head:    form.immediateHead,
+          mobile:            form.mobile,
+          date_of_travel:    form.dateOfTravel,
+          date_returned:     form.dateReturned,
+          destination:       form.destination,
+          purpose:           form.purpose,
+          waiting_area:      form.waitingArea,
+          time_of_departure: form.departureTime || null,
+          expected_return:   form.expectedReturn || null,
+          passengers:        form.numPassengers ? parseInt(form.numPassengers, 10) : 0,
+          passenger_names:   form.passengerNames,
+          project_based:     form.projectBased === "Yes" ? true : form.projectBased === "No" ? false : null,
+          funding_type:      form.projectBased === "Yes" ? (form.fundingType || "") : "",
+          notes:             form.notes || "",
+        }),
+      }, { auth: false });
 
-    setSubmitted(true);
-  } catch (err) {
-    console.error(err);
-    alert("Submission failed: " + err.message);
-  } finally {
-    setSubmitting(false);
-  }
-};
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+      alert("Submission failed:\n" + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   /* ── SUCCESS ── */
   if (submitted) {
@@ -246,7 +372,7 @@ export default function RequestPage() {
 
       <main className="flex-1 overflow-y-auto px-6 md:px-10 py-8">
 
-        {/* ── STEP 1: Requester + Travel Details ── */}
+        {/* ── STEP 1 ── */}
         {step === 1 && (
           <div className="max-w-5xl mx-auto">
             <div className="mb-6">
@@ -257,7 +383,7 @@ export default function RequestPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-              {/* ── LEFT: Requester Info ── */}
+              {/* LEFT: Requester Info */}
               <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col gap-5">
                 <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                   <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center">
@@ -268,24 +394,28 @@ export default function RequestPage() {
                   <h2 className="text-sm font-bold text-slate-700">Requester Information</h2>
                 </div>
 
-                <Field label="Email">
-                  <input className={inputCls(errors.email)} placeholder="your@email.com" value={form.email} onChange={(e) => set("email", e.target.value)} />
+                <Field label="Email" error={errors.email} hint="Must be @gmail.com">
+                  <input className={inputCls(errors.email)} placeholder="your@gmail.com" value={form.email} onChange={(e) => set("email", e.target.value)} />
                 </Field>
                 <Field label="Full Name" required error={errors.name}>
                   <input className={inputCls(errors.name)} placeholder="Juan dela Cruz" value={form.name} onChange={(e) => set("name", e.target.value)} />
                 </Field>
                 <Field label="Department / Office" required error={errors.department}>
-                  <input className={inputCls(errors.department)} placeholder="e.g. ICT Department" value={form.department} onChange={(e) => set("department", e.target.value)} />
+                  <DepartmentInput
+                    value={form.department}
+                    onChange={(val) => set("department", val)}
+                    error={errors.department}
+                  />
                 </Field>
                 <Field label="Immediate Head" required error={errors.immediateHead}>
                   <input className={inputCls(errors.immediateHead)} placeholder="Name of your direct supervisor" value={form.immediateHead} onChange={(e) => set("immediateHead", e.target.value)} />
                 </Field>
-                <Field label="Mobile Number" required error={errors.mobile} hint="Requester's contact">
-                  <input className={inputCls(errors.mobile)} placeholder="09xx-xxx-xxxx" value={form.mobile} onChange={(e) => set("mobile", e.target.value)} />
+                <Field label="Mobile Number" required error={errors.mobile} hint="11 digits · e.g. 09171234567">
+                  <input className={inputCls(errors.mobile)} placeholder="09171234567" maxLength={13} value={form.mobile} onChange={(e) => set("mobile", e.target.value)} />
                 </Field>
               </div>
 
-              {/* ── RIGHT: Travel Details ── */}
+              {/* RIGHT: Travel Details */}
               <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col gap-5">
                 <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                   <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -299,16 +429,38 @@ export default function RequestPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Date of Travel" required error={errors.dateOfTravel}>
-                    <input type="date" className={inputCls(errors.dateOfTravel)} value={form.dateOfTravel} onChange={(e) => set("dateOfTravel", e.target.value)} />
+                    <input
+                      type="date"
+                      className={inputCls(errors.dateOfTravel)}
+                      value={form.dateOfTravel}
+                      onChange={(e) => set("dateOfTravel", e.target.value)}
+                    />
                   </Field>
-                  <Field label="Waiting / Pickup Area" required error={errors.waitingArea}>
-                    <input className={inputCls(errors.waitingArea)} placeholder="e.g. Main Gate" value={form.waitingArea} onChange={(e) => set("waitingArea", e.target.value)} />
+                  <Field label="Date of Return" required error={errors.dateReturned}>
+                    <input
+                      type="date"
+                      className={inputCls(errors.dateReturned)}
+                      min={form.dateOfTravel || undefined}
+                      value={form.dateReturned}
+                      onChange={(e) => set("dateReturned", e.target.value)}
+                    />
                   </Field>
                 </div>
 
-                <Field label="Travel Destination" required error={errors.destination}>
-                  <input className={inputCls(errors.destination)} placeholder="e.g. Manila, NCR" value={form.destination} onChange={(e) => set("destination", e.target.value)} />
-                </Field>
+                {form.dateOfTravel && form.dateReturned && (
+                  <div className="-mt-1">
+                    <TripDurationBadge from={form.dateOfTravel} to={form.dateReturned} />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Waiting / Pickup Area" required error={errors.waitingArea}>
+                    <input className={inputCls(errors.waitingArea)} placeholder="e.g. Main Gate" value={form.waitingArea} onChange={(e) => set("waitingArea", e.target.value)} />
+                  </Field>
+                  <Field label="Travel Destination" required error={errors.destination}>
+                    <input className={inputCls(errors.destination)} placeholder="e.g. Manila, NCR" value={form.destination} onChange={(e) => set("destination", e.target.value)} />
+                  </Field>
+                </div>
 
                 <Field label="Purpose of Travel" required error={errors.purpose}>
                   <textarea rows={3} className={inputCls(errors.purpose) + " resize-none"} placeholder="Describe the purpose of your trip…" value={form.purpose} onChange={(e) => set("purpose", e.target.value)} />
@@ -318,14 +470,13 @@ export default function RequestPage() {
                   <Field label="Departure Time" required error={errors.departureTime}>
                     <input type="time" className={inputCls(errors.departureTime)} value={form.departureTime} onChange={(e) => set("departureTime", e.target.value)} />
                   </Field>
-                  <Field label="Expected Return" required error={errors.expectedReturn}>
+                  <Field label="Expected Return Time" required error={errors.expectedReturn}>
                     <input type="time" className={inputCls(errors.expectedReturn)} value={form.expectedReturn} onChange={(e) => set("expectedReturn", e.target.value)} />
                   </Field>
                 </div>
               </div>
             </div>
 
-            {/* Next button */}
             <div className="mt-6 flex justify-end">
               <button
                 onClick={next}
@@ -340,7 +491,7 @@ export default function RequestPage() {
           </div>
         )}
 
-        {/* ── STEP 2: Passengers + Confirmation ── */}
+        {/* ── STEP 2 ── */}
         {step === 2 && (
           <div className="max-w-5xl mx-auto">
             <div className="mb-6">
@@ -351,7 +502,7 @@ export default function RequestPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-              {/* ── LEFT: Passengers ── */}
+              {/* LEFT: Passengers */}
               <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col gap-5">
                 <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                   <div className="w-6 h-6 rounded-lg bg-violet-100 flex items-center justify-center">
@@ -363,19 +514,39 @@ export default function RequestPage() {
                 </div>
 
                 <Field label="Number of Passengers" required error={errors.numPassengers}>
-                  <input type="number" min="1" className={inputCls(errors.numPassengers)} placeholder="e.g. 4" value={form.numPassengers} onChange={(e) => set("numPassengers", e.target.value)} />
+                  <input
+                    type="number"
+                    min="1"
+                    className={inputCls(errors.numPassengers)}
+                    placeholder="e.g. 4"
+                    value={form.numPassengers}
+                    onChange={(e) => set("numPassengers", e.target.value)}
+                  />
                 </Field>
 
-                <Field label="Passenger Names" required error={errors.passengerNames} hint="One per line">
-                  <textarea rows={4} className={inputCls(errors.passengerNames) + " resize-none"} placeholder={"1. Juan dela Cruz\n2. Maria Santos\n3. Pedro Reyes"} value={form.passengerNames} onChange={(e) => set("passengerNames", e.target.value)} />
+                <Field
+                  label="Passenger Names"
+                  required
+                  error={errors.passengerNames}
+                  hint={
+                    form.numPassengers && !isNaN(parseInt(form.numPassengers, 10))
+                      ? `${countPassengerNames(form.passengerNames)} / ${form.numPassengers} listed`
+                      : "One per line"
+                  }
+                >
+                  <textarea
+                    rows={5}
+                    className={inputCls(errors.passengerNames) + " resize-none"}
+                    placeholder={"1. Juan dela Cruz\n2. Maria Santos\n3. Pedro Reyes"}
+                    value={form.passengerNames}
+                    onChange={(e) => set("passengerNames", e.target.value)}
+                  />
                 </Field>
 
                 <Field label="Project Based Travel?" required error={errors.projectBased}>
                   <div className="flex gap-3">
                     {["Yes", "No"].map((opt) => (
-                      <button key={opt} type="button" onClick={() => set("projectBased", opt)} className={chipBtn(form.projectBased === opt) + " flex-1"}>
-                        {opt}
-                      </button>
+                      <button key={opt} type="button" onClick={() => set("projectBased", opt)} className={chipBtn(form.projectBased === opt) + " flex-1"}>{opt}</button>
                     ))}
                   </div>
                 </Field>
@@ -384,40 +555,46 @@ export default function RequestPage() {
                   <Field label="Funding Type">
                     <div className="flex gap-3 flex-wrap">
                       {["Externally Funded", "Internally Funded"].map((opt) => (
-                        <button key={opt} type="button" onClick={() => set("fundingType", opt)} className={chipBtn(form.fundingType === opt) + " flex-1"}>
-                          {opt}
-                        </button>
+                        <button key={opt} type="button" onClick={() => set("fundingType", opt)} className={chipBtn(form.fundingType === opt) + " flex-1"}>{opt}</button>
                       ))}
                     </div>
                   </Field>
                 )}
 
-                <Field label="Attachments" hint="Optional · Max 10 MB each">
-                  <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-5 cursor-pointer hover:bg-emerald-50 hover:border-emerald-200 transition-all duration-200 text-slate-400 text-xs group">
-                    <div className="w-9 h-9 rounded-xl bg-slate-100 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
-                      <svg className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                    </div>
-                    <span className="font-medium text-slate-500 group-hover:text-emerald-600 transition-colors">Click to upload files</span>
-                    <input type="file" multiple accept="*/*" className="hidden" onChange={(e) => set("attachments", Array.from(e.target.files))} />
-                  </label>
-                  {form.attachments.length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {form.attachments.map((f, i) => (
-                        <li key={i} className="text-xs text-slate-500 flex items-center gap-1.5 bg-slate-50 rounded-lg px-3 py-2">
-                          <svg className="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                          </svg>
-                          {f.name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                <Field label="Additional Notes" hint="Optional">
+                  <textarea
+                    rows={3}
+                    className={inputCls(false) + " resize-none"}
+                    placeholder="Any additional information, special instructions, or requests…"
+                    value={form.notes}
+                    onChange={(e) => set("notes", e.target.value)}
+                  />
                 </Field>
+
+                {/* Attachment reminder */}
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex gap-3">
+                  <span className="text-base leading-none shrink-0">📎</span>
+                  <div className="text-xs text-blue-800 leading-relaxed">
+                    <span className="font-semibold block mb-0.5">Have attachments?</span>
+                    If you have supporting documents (authorization letters, itineraries, etc.),
+                    please upload them to our shared folder and include your name and travel date
+                    in the filename so we can match them to your request.{" "}
+                    <a
+                      href="https://drive.google.com/drive/folders/12ZfJ337ToBpRh7jmZSGv6QLctv2zF929?usp=sharing"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 font-semibold text-blue-600 underline underline-offset-2 hover:text-blue-800 transition"
+                    >
+                      Upload here
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
               </div>
 
-              {/* ── RIGHT: Review + Acknowledge ── */}
+              {/* RIGHT: Review + Acknowledge */}
               <div className="flex flex-col gap-5">
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col gap-0">
                   <div className="flex items-center gap-2 pb-3 mb-3 border-b border-slate-100">
@@ -430,18 +607,20 @@ export default function RequestPage() {
                   </div>
                   <div className="divide-y divide-slate-50">
                     {[
-                      ["Name",         form.name],
-                      ["Email",        form.email],
-                      ["Department",   form.department],
-                      ["Imm. Head",    form.immediateHead],
-                      ["Mobile",       form.mobile],
-                      ["Date",         form.dateOfTravel],
-                      ["Destination",  form.destination],
-                      ["Waiting Area", form.waitingArea],
-                      ["Departure",    form.departureTime],
-                      ["Return",       form.expectedReturn],
-                      ["Passengers",   form.numPassengers],
-                      ["Project Based",form.projectBased],
+                      ["Name",           form.name],
+                      ["Email",          form.email],
+                      ["Department",     form.department],
+                      ["Imm. Head",      form.immediateHead],
+                      ["Mobile",         form.mobile],
+                      ["Date of Travel", form.dateOfTravel],
+                      ["Date of Return", form.dateReturned],
+                      ["Destination",    form.destination],
+                      ["Waiting Area",   form.waitingArea],
+                      ["Departure",      form.departureTime],
+                      ["Return Time",    form.expectedReturn],
+                      ["Passengers",     form.numPassengers],
+                      ["Notes",          form.notes],
+                      ["Project Based",  form.projectBased],
                       ...(form.projectBased === "Yes" ? [["Funding", form.fundingType]] : []),
                     ].map(([label, val]) => (
                       <div key={label} className="flex justify-between gap-4 py-2">
@@ -450,15 +629,18 @@ export default function RequestPage() {
                       </div>
                     ))}
                   </div>
+                  {form.dateOfTravel && form.dateReturned && (
+                    <div className="pt-3 mt-1 border-t border-slate-50">
+                      <TripDurationBadge from={form.dateOfTravel} to={form.dateReturned} />
+                    </div>
+                  )}
                 </div>
 
-                {/* Pending notice */}
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-sm text-amber-800">
                   <span className="text-base leading-none shrink-0">⏳</span>
                   <span>Your request will be <strong>pending admin approval</strong>. Once approved, your trip will be automatically added to the calendar.</span>
                 </div>
 
-                {/* Acknowledgement */}
                 <div className={`rounded-xl border p-4 ${errors.acknowledgement ? "border-rose-300 bg-rose-50" : "border-slate-200 bg-white"}`}>
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
@@ -472,10 +654,13 @@ export default function RequestPage() {
                       I certify that the information provided is accurate and I understand that vehicle availability is subject to approval.
                     </span>
                   </label>
-                  {errors.acknowledgement && <p className="text-rose-400 text-xs mt-2 ml-7">{errors.acknowledgement}</p>}
+                  {errors.acknowledgement && (
+                    <div className="mt-2 ml-7">
+                      <DangerAlert message={errors.acknowledgement} />
+                    </div>
+                  )}
                 </div>
 
-                {/* Submit */}
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
