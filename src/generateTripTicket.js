@@ -1,58 +1,53 @@
 /**
  * generateTripTicket.js
  *
- * Fills the DNSC Motor Pool Driver's Trip Ticket (tripticket.xlsx)
- * with travel request data and triggers a browser download.
+ * Overlays travel request data onto the original
+ * tp_and_fuel_consumption.pdf template using pdf-lib.
  *
- * Cell addresses are confirmed from the actual template:
- *   Sheet: "Trip Ticket"
+ * The original PDF (with logo, layout, signatures) is used as the background —
+ * nothing gets stripped. Text is drawn on top at calibrated coordinates.
  *
  * Usage:
  *   import { generateTripTicket } from "./generateTripTicket";
  *   await generateTripTicket(selectedRequests, driversMap, vehiclesMap, templateUrl);
  *
- * Dependencies:  npm install xlsx
+ * Dependencies:  npm install pdf-lib
  */
 
-import * as XLSX from "xlsx";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
-// ── Confirmed cell map (from tripticket.xlsx) ─────────────────
+// ── Coordinate map (x, y from bottom-left, in PDF points) ─────────────────
 //
-//  Section A – filled by authorizing officer
-//    C11  → Date of travel
-//    J11  → Vehicle plate + model  (merged J11:K11)
-//    C12  → Driver name            (merged C12:E12)
-//    D14  → Passenger 1            (rows 14-21, col D)
-//    D15  → Passenger 2
-//    D16  → Passenger 3
-//    D17  → Passenger 4
-//    D18  → Passenger 5  (note: I18:K18 is also merged — write to D18)
-//    D19  → Passenger 6
-//    D20  → Passenger 7
-//    D21  → Passenger 8
-//    D22  → Destination            (merged D22:K22)
-//    D23  → Purpose of Travel      (merged D23:K23)
+// Page size from template: ~595 x 842 pt (A4)
+// Calibrated by visual inspection of the PDF layout.
 //
-//  Bottom section
-//    C52  → Date (repeated at bottom)
-//    I53  → Driver name (Certified True and Correct — merged I53:K54)
-//
-const CELL_MAP = {
-  date:        "C11",
-  plateNo:     "J11",
-  driver:      "C12",
-  passengers:  ["D14","D15","D16","D17","D18","D19","D20","D21"],
-  destination: "D22",
-  purpose:     "D23",
-  dateBottom:  "C52",   // mirrors the date at the bottom of the form
-  driverCert:  "I53",   // "Certified True and Correct" driver name
+const COORDS = {
+  date:        { x: 110, y: 657 },   // Section A - Date:
+  plateNo:     { x: 390, y: 657 },   // Vehicle Plate No.:
+  driver:      { x: 110, y: 635 },   // Driver:
+  // Authorized Passengers 1–8 (rows spaced ~18pt apart)
+  passengers: [
+    { x: 220, y: 608 },
+    { x: 220, y: 590 },
+    { x: 220, y: 572 },
+    { x: 220, y: 554 },
+    { x: 220, y: 536 },
+    { x: 220, y: 518 },
+    { x: 220, y: 500 },
+    { x: 220, y: 482 },
+  ],
+  destination: { x: 130, y: 460 },   // Destination:
+  purpose:     { x: 130, y: 442 },   // Purpose of Travel:
+  dateBottom:  { x: 110, y: 108 },   // Date: at bottom (Section C)
+  driverCert:  { x: 350, y: 90  },   // Certified True and Correct:
 };
+
+const FONT_SIZE = 9;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function fmtDate(dateStr) {
   if (!dateStr) return "";
-  // Handle both "2026-01-15" strings and Date objects
   const d = typeof dateStr === "string"
     ? new Date(dateStr + "T00:00:00")
     : new Date(dateStr);
@@ -66,165 +61,121 @@ function safeStr(v) {
   return v == null ? "" : String(v);
 }
 
-async function loadTemplate(templateUrl) {
-console.log("Loading template from:", templateUrl); // ← add this
-const res = await fetch(templateUrl);
-console.log("Content-Type:", res.headers.get("content-type")); // ← add this
-
+async function loadTemplatePdf(templateUrl) {
+  const res = await fetch(templateUrl);
   if (!res.ok) {
     throw new Error(`Could not load template: ${res.status} ${res.statusText}\nURL: ${templateUrl}`);
   }
-  const arrayBuffer = await res.arrayBuffer();
-  return XLSX.read(arrayBuffer, { type: "array", cellStyles: true });
-}
-
-/**
- * Deep-clone a worksheet object safely.
- */
-function cloneSheet(ws) {
-  const cloned = {};
-  for (const key of Object.keys(ws)) {
-    if (key === "!merges" && Array.isArray(ws[key])) {
-      cloned[key] = ws[key].map((m) => ({ ...m, s: { ...m.s }, e: { ...m.e } }));
-    } else if (key === "!cols" || key === "!rows") {
-      cloned[key] = ws[key] ? ws[key].map((c) => ({ ...(c || {}) })) : ws[key];
-    } else if (typeof ws[key] === "object" && ws[key] !== null && key !== "!ref") {
-      // individual cell object
-      cloned[key] = { ...ws[key] };
-      if (ws[key].s) cloned[key].s = { ...ws[key].s };
-    } else {
-      cloned[key] = ws[key];
-    }
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("text/html")) {
+    throw new Error(`Template not found at: ${templateUrl}\nMake sure tp_and_fuel_consumption.pdf is in your /public/templates/ folder.`);
   }
-  return cloned;
+  return res.arrayBuffer();
 }
 
 /**
- * Write a value into a cell, preserving existing border/style metadata.
- * For merged cells, always write to the top-left cell of the range.
+ * Fill one page (copy of template) with a single request's data.
  */
-function writeCell(ws, cellRef, value) {
-  const existing = ws[cellRef] || {};
-  ws[cellRef] = {
-    ...existing,
-    v: value,
-    t: value instanceof Date ? "d" : typeof value === "number" ? "n" : "s",
-    w: undefined, // clear cached formatted text so XLSX re-renders
+async function fillPage(templateBytes, request, driversMap, vehiclesMap) {
+  const pdfDoc   = await PDFDocument.load(templateBytes);
+  const font     = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const page     = pdfDoc.getPages()[0]; // Trip Ticket is page 1
+  const black    = rgb(0, 0, 0);
+
+  const draw = (coord, text) => {
+    if (!text) return;
+    page.drawText(String(text), {
+      x:    coord.x,
+      y:    coord.y,
+      size: FONT_SIZE,
+      font,
+      color: black,
+    });
   };
-}
 
-/**
- * Fill one Trip Ticket worksheet with data from a single request.
- */
-function fillSheet(ws, request, driversMap, vehiclesMap) {
-  // ── Resolve display values ───────────────────────────────────────────────
-  const driverId    = request.driver;
-  const vehicleId   = request.vehicle;
+  // ── Resolve values ───────────────────────────────────────────────────────
+  const driverName   = driversMap?.[request.driver]   ?? safeStr(request.driver);
+  const vehicleLabel = vehiclesMap?.[request.vehicle] ?? safeStr(request.vehicle);
+  const travelDate   = fmtDate(request.date_of_travel ?? request.dateOfTravel ?? "");
 
-  const driverName  = driversMap?.[driverId]
-    ?? safeStr(driverId);
-
-  const vehicleLabel = vehiclesMap?.[vehicleId]
-    ?? safeStr(vehicleId);
-
-  // Your dropdown format is "PLATE — Model", keep it as-is for the plate field
-  const plateDisplay = vehicleLabel || "—";
-
-  // Date of travel
-  const travelDate = fmtDate(
-    request.date_of_travel ?? request.dateOfTravel ?? ""
-  );
-
-  // Passenger names — split by newline or comma, up to 8 slots
-  const rawPax = safeStr(
-    request.passenger_names ?? request.passengerNames ?? ""
-  );
+  const rawPax = safeStr(request.passenger_names ?? request.passengerNames ?? "");
   const paxList = rawPax
     .split(/[\n,]+/)
     .map((p) => p.trim())
     .filter(Boolean)
     .slice(0, 8);
 
-  // ── Write cells ──────────────────────────────────────────────────────────
-  writeCell(ws, CELL_MAP.date,        travelDate);
-  writeCell(ws, CELL_MAP.plateNo,     plateDisplay);
-  writeCell(ws, CELL_MAP.driver,      driverName);
-  writeCell(ws, CELL_MAP.destination, safeStr(request.destination ?? ""));
-  writeCell(ws, CELL_MAP.purpose,     safeStr(request.purpose ?? ""));
-  writeCell(ws, CELL_MAP.dateBottom,  travelDate);
-  writeCell(ws, CELL_MAP.driverCert,  driverName);
+  // ── Draw fields ──────────────────────────────────────────────────────────
+  draw(COORDS.date,        travelDate);
+  draw(COORDS.plateNo,     vehicleLabel);
+  draw(COORDS.driver,      driverName);
+  draw(COORDS.destination, safeStr(request.destination ?? ""));
+  draw(COORDS.purpose,     safeStr(request.purpose ?? ""));
+  draw(COORDS.dateBottom,  travelDate);
+  draw(COORDS.driverCert,  driverName);
 
-  CELL_MAP.passengers.forEach((cellRef, i) => {
-    writeCell(ws, cellRef, paxList[i] ?? "");
+  paxList.forEach((name, i) => {
+    draw(COORDS.passengers[i], name);
   });
+
+  return pdfDoc.save();
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * Generate and download filled trip ticket(s).
+ * Generate and download filled trip ticket(s) as PDF.
  *
- * @param {Array}  requests      Raw request objects from your component state
+ * @param {Array}  requests      Raw request objects
  * @param {Object} driversMap    { [id]: "Driver Name" }
  * @param {Object} vehiclesMap   { [id]: "PLATE — Model" }
- * @param {string} templateUrl   Path to tripticket.xlsx in /public
+ * @param {string} templateUrl   Path to tp_and_fuel_consumption.pdf in /public
  * @param {Object} [options]
- * @param {boolean} [options.oneFilePerRequest]
- *   true  → one .xlsx download per request
- *   false (default) → all on separate sheets in one .xlsx
+ * @param {boolean} [options.oneFilePerRequest]  true = separate PDF per request
  */
 export async function generateTripTicket(
   requests,
   driversMap = {},
   vehiclesMap = {},
-  templateUrl = "/templates/tripticket.xlsx",
+  templateUrl = "/templates/tp_and_fuel_consumption.pdf",
   { oneFilePerRequest = false } = {}
 ) {
   if (!requests?.length) return;
 
-  // Load the template workbook once
-  const templateWb = await loadTemplate(templateUrl);
-  const SHEET_NAME = "Trip Ticket";
-
-  if (!templateWb.SheetNames.includes(SHEET_NAME)) {
-    throw new Error(`Sheet "${SHEET_NAME}" not found in template. Available: ${templateWb.SheetNames.join(", ")}`);
-  }
-
-  // Snapshot the original template sheet data before any writes
-  const templateSnapshot = cloneSheet(templateWb.Sheets[SHEET_NAME]);
+  const templateBytes = await loadTemplatePdf(templateUrl);
 
   if (oneFilePerRequest || requests.length === 1) {
-    // ── One file per request ──────────────────────────────────────────────
+    // ── One PDF per request ───────────────────────────────────────────────
     for (const request of requests) {
-      const wb = await loadTemplate(templateUrl);
-      fillSheet(wb.Sheets[SHEET_NAME], request, driversMap, vehiclesMap);
-
+      const pdfBytes = await fillPage(templateBytes, request, driversMap, vehiclesMap);
       const refNo    = `VR-${String(request.id).padStart(4, "0")}`;
       const safeName = safeStr(request.name ?? "Unknown").replace(/[^a-zA-Z0-9]/g, "_");
-      XLSX.writeFile(wb, `TripTicket_${refNo}_${safeName}.xlsx`);
+      triggerDownload(pdfBytes, `TripTicket_${refNo}_${safeName}.pdf`);
     }
 
   } else {
-    // ── Multiple requests → one workbook, one sheet per request ──────────
-    const wb = { SheetNames: [], Sheets: {}, Props: templateWb.Props };
+    // ── Multiple requests → merged into one PDF ───────────────────────────
+    const mergedDoc = await PDFDocument.create();
 
-    requests.forEach((request, idx) => {
-      const ws     = idx === 0
-        ? cloneSheet(templateWb.Sheets[SHEET_NAME])
-        : cloneSheet(templateSnapshot);
+    for (const request of requests) {
+      const pdfBytes  = await fillPage(templateBytes, request, driversMap, vehiclesMap);
+      const filledDoc = await PDFDocument.load(pdfBytes);
+      const [page]    = await mergedDoc.copyPages(filledDoc, [0]);
+      mergedDoc.addPage(page);
+    }
 
-      fillSheet(ws, request, driversMap, vehiclesMap);
-
-      const refNo    = `VR-${String(request.id).padStart(4, "0")}`;
-      const safeName = safeStr(request.name ?? "").replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20);
-      // Excel sheet name max 31 chars
-      const sheetLabel = `${refNo}_${safeName}`.slice(0, 31);
-
-      wb.SheetNames.push(sheetLabel);
-      wb.Sheets[sheetLabel] = ws;
-    });
-
+    const mergedBytes = await mergedDoc.save();
     const today = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `TripTickets_${today}.xlsx`);
+    triggerDownload(mergedBytes, `TripTickets_${today}.pdf`);
   }
+}
+
+function triggerDownload(pdfBytes, filename) {
+  const blob = new Blob([pdfBytes], { type: "application/pdf" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
