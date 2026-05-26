@@ -1,7 +1,7 @@
 /**
  * generateTripTicket.js
  *
- * Fills the DNSC Motor Pool Driver's Trip Ticket (tp_and_fuel_consumption.xlsx)
+ * Fills the DNSC Motor Pool Driver's Trip Ticket (tripticket.xlsx)
  * with travel request data and triggers a browser download.
  *
  * Cell addresses are confirmed from the actual template:
@@ -16,7 +16,7 @@
 
 import * as XLSX from "xlsx";
 
-// ── Confirmed cell map (from tp_and_fuel_consumption.xlsx) ─────────────────
+// ── Confirmed cell map (from tripticket.xlsx) ─────────────────
 //
 //  Section A – filled by authorizing officer
 //    C11  → Date of travel
@@ -167,7 +167,7 @@ function fillSheet(ws, request, driversMap, vehiclesMap) {
  * @param {Array}  requests      Raw request objects from your component state
  * @param {Object} driversMap    { [id]: "Driver Name" }
  * @param {Object} vehiclesMap   { [id]: "PLATE — Model" }
- * @param {string} templateUrl   Path to tp_and_fuel_consumption.xlsx in /public
+ * @param {string} templateUrl   Path to tripticket.xlsx in /public
  * @param {Object} [options]
  * @param {boolean} [options.oneFilePerRequest]
  *   true  → one .xlsx download per request
@@ -177,7 +177,7 @@ export async function generateTripTicket(
   requests,
   driversMap = {},
   vehiclesMap = {},
-  templateUrl = "/templates/tp_and_fuel_consumption.xlsx",
+  templateUrl = "/templates/tripticket.xlsx",
   { oneFilePerRequest = false } = {}
 ) {
   if (!requests?.length) return;
