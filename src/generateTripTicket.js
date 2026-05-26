@@ -67,7 +67,10 @@ function safeStr(v) {
 }
 
 async function loadTemplate(templateUrl) {
-  const res = await fetch(templateUrl);
+console.log("Loading template from:", templateUrl); // ← add this
+const res = await fetch(templateUrl);
+console.log("Content-Type:", res.headers.get("content-type")); // ← add this
+
   if (!res.ok) {
     throw new Error(`Could not load template: ${res.status} ${res.statusText}\nURL: ${templateUrl}`);
   }
