@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { apiFetch } from "../api";
-
 import { STATUS_CFG } from "../constants/statusConfig";
 import { generateVehicleRequestPDF } from "../utils/generatePDF";
 
