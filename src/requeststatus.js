@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import ViewRequestModal from "./requester/Viewrequestmodal";
 import { apiFetch } from "./api";
+import { generateTripTicket } from "./generateTripTicket";
+
+const TEMPLATE_URL = "/templates/tp_and_fuel_consumption.xlsx";
+
+const [generatingTicket, setGeneratingTicket] = useState(false);
+
 
 function fmtTravelDate(dateOfTravel, dateofReturned) {
   if (!dateOfTravel) return "—";
@@ -373,6 +379,29 @@ export default function AdminRequestStatus() {
     if (selected.size === 0) return;
     setDeleteConfirm(true);
   };
+  const handleGenerateTripTickets = async () => {
+  if (selected.size === 0) return;
+ 
+  const driversMap  = Object.fromEntries(drivers.map((d) => [d.id, d.label]));
+  const vehiclesMap = Object.fromEntries(vehicles.map((v) => [v.id, v.label]));
+  const selectedRequests = data.filter((r) => selected.has(r.id));
+ 
+  setGeneratingTicket(true);
+  try {
+    await generateTripTicket(
+      selectedRequests,
+      driversMap,
+      vehiclesMap,
+      TEMPLATE_URL,
+      { oneFilePerRequest: selected.size === 1 }
+    );
+  } catch (err) {
+    console.error("Trip ticket generation failed:", err);
+    alert("Failed to generate trip ticket.\nCheck console for details.");
+  } finally {
+    setGeneratingTicket(false);
+  }
+};
 
   const confirmDelete = async () => {
     const ids = [...selected];
@@ -534,10 +563,32 @@ export default function AdminRequestStatus() {
 
           <div className="ml-auto flex items-center gap-2">
             {selected.size > 0 && (
-              <>
-                <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200">
-                  {selected.size} selected
-                </span>
+            <>
+              <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200">
+                {selected.size} selected
+              </span>
+ 
+              {/* ── Trip Ticket button ── */}
+              <button
+                onClick={handleGenerateTripTickets}
+                disabled={generatingTicket}
+                title="Generate Driver's Trip Ticket (.xlsx)"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 border border-sky-200 rounded-lg text-xs font-medium text-sky-600 hover:bg-sky-100 transition disabled:opacity-50"
+              >
+                {generatingTicket ? (
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
+                  </svg>
+                )}
+                Trip Ticket{selected.size > 1 ? "s" : ""}
+              </button>
+              
                 <button
                   onClick={handleBulkDelete}
                   disabled={deleting}
