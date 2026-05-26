@@ -2,7 +2,7 @@
  * generateTripTicket.js
  *
  * Overlays travel request data onto the original
- * tp_and_fuel_consumption.pdf template using pdf-lib.
+ * tripticket.pdf template using pdf-lib.
  *
  * The original PDF (with logo, layout, signatures) is used as the background —
  * nothing gets stripped. Text is drawn on top at calibrated coordinates.
@@ -68,7 +68,7 @@ async function loadTemplatePdf(templateUrl) {
   }
   const contentType = res.headers.get("content-type") || "";
   if (contentType.includes("text/html")) {
-    throw new Error(`Template not found at: ${templateUrl}\nMake sure tp_and_fuel_consumption.pdf is in your /public/templates/ folder.`);
+    throw new Error(`Template not found at: ${templateUrl}\nMake sure tripticket.pdf is in your /public/templates/ folder.`);
   }
   return res.arrayBuffer();
 }
@@ -129,7 +129,7 @@ async function fillPage(templateBytes, request, driversMap, vehiclesMap) {
  * @param {Array}  requests      Raw request objects
  * @param {Object} driversMap    { [id]: "Driver Name" }
  * @param {Object} vehiclesMap   { [id]: "PLATE — Model" }
- * @param {string} templateUrl   Path to tp_and_fuel_consumption.pdf in /public
+ * @param {string} templateUrl   Path to tripticket.pdf in /public
  * @param {Object} [options]
  * @param {boolean} [options.oneFilePerRequest]  true = separate PDF per request
  */
@@ -137,7 +137,7 @@ export async function generateTripTicket(
   requests,
   driversMap = {},
   vehiclesMap = {},
-  templateUrl = "/templates/tp_and_fuel_consumption.pdf",
+  templateUrl = "/templates/tripticket.pdf",
   { oneFilePerRequest = false } = {}
 ) {
   if (!requests?.length) return;
