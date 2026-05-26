@@ -97,7 +97,9 @@ export default function ViewRequestModal({
               : null,
           funding_type:
             draft.projectBased === "Yes" ? draft.fundingType || "" : "",
-        }),
+        },
+        { auth: false}
+      ),
       });
       setMode("view");
       onSave?.({ ...draft, ...updated });
@@ -131,7 +133,9 @@ export default function ViewRequestModal({
       await apiFetch(`/requests/${request.id}/`, {
         method: "PATCH",
         body: JSON.stringify({ status: "cancelled" }),
-      });
+      },
+      {auth: false}
+    );
       const updated = { ...draft, status: "cancelled" };
       setDraft(updated);
       setShowCancelDialog(false);
