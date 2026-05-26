@@ -3,7 +3,7 @@ import ViewRequestModal from "./requester/Viewrequestmodal";
 import { apiFetch } from "./api";
 import { generateTripTicket } from "./generateTripTicket";
 
-const TEMPLATE_URL = "/templates/tripticket.xlsx";
+const TEMPLATE_URL = "/templates/tripticket.pdf";
 
 function fmtTravelDate(dateOfTravel, dateofReturned) {
   if (!dateOfTravel) return "—";
