@@ -5,9 +5,6 @@ import { generateTripTicket } from "./generateTripTicket";
 
 const TEMPLATE_URL = "/templates/tp_and_fuel_consumption.xlsx";
 
-const [generatingTicket, setGeneratingTicket] = useState(false);
-
-
 function fmtTravelDate(dateOfTravel, dateofReturned) {
   if (!dateOfTravel) return "—";
   const start = new Date(dateOfTravel + "T00:00:00");
@@ -118,10 +115,10 @@ const DeleteConfirmModal = ({ count, onConfirm, onCancel, loading }) => {
 
 // ─── Status Dropdown ──────────────────────────────────────────────────────────
 const STATUS_OPTS = [
-  { value: "PENDING",     label: "Pending",     dot: "bg-amber-400",   badge: "bg-amber-50 text-amber-700 border-amber-200",     optBg: "bg-amber-50",   optText: "text-amber-700",   optHover: "hover:bg-amber-100" },
+  { value: "PENDING",     label: "Pending",     dot: "bg-amber-400",   badge: "bg-amber-50 text-amber-700 border-amber-200",      optBg: "bg-amber-50",   optText: "text-amber-700",   optHover: "hover:bg-amber-100" },
   { value: "APPROVED",    label: "Approved",    dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700 border-emerald-200", optBg: "bg-emerald-50", optText: "text-emerald-700", optHover: "hover:bg-emerald-100" },
-  { value: "DISAPPROVED", label: "Disapproved", dot: "bg-red-400",     badge: "bg-red-50 text-red-700 border-red-200",           optBg: "bg-red-50",     optText: "text-red-700",     optHover: "hover:bg-red-100" },
-  { value: "CANCELLED",   label: "Cancelled",   dot: "bg-slate-400",   badge: "bg-slate-50 text-slate-600 border-slate-200",     optBg: "bg-slate-50",   optText: "text-slate-600",   optHover: "hover:bg-slate-100" },
+  { value: "DISAPPROVED", label: "Disapproved", dot: "bg-red-400",     badge: "bg-red-50 text-red-700 border-red-200",            optBg: "bg-red-50",     optText: "text-red-700",     optHover: "hover:bg-red-100" },
+  { value: "CANCELLED",   label: "Cancelled",   dot: "bg-slate-400",   badge: "bg-slate-50 text-slate-600 border-slate-200",      optBg: "bg-slate-50",   optText: "text-slate-600",   optHover: "hover:bg-slate-100" },
 ];
 
 const StatusDropdown = ({ value, onChange, saving, disabled }) => {
@@ -139,7 +136,6 @@ const StatusDropdown = ({ value, onChange, saving, disabled }) => {
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
           ${current.badge}`}
       >
-        {/* Lock icon replaces chevron for cancelled */}
         {isCancelled ? (
           <svg className="w-2.5 h-2.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -236,7 +232,6 @@ const SortIcon = ({ col, sortCol, sortDir }) => {
 // ─── Inline action buttons ────────────────────────────────────────────────────
 const ActionButtons = ({ onView, onEdit, disableEdit }) => (
   <div className="flex items-center gap-1.5">
-    {/* View — always active */}
     <button
       onClick={onView}
       title="View"
@@ -248,7 +243,6 @@ const ActionButtons = ({ onView, onEdit, disableEdit }) => (
       </svg>
     </button>
 
-    {/* Edit — locked icon when disabled */}
     <button
       onClick={!disableEdit ? onEdit : undefined}
       disabled={disableEdit}
@@ -260,7 +254,6 @@ const ActionButtons = ({ onView, onEdit, disableEdit }) => (
         }`}
     >
       {disableEdit ? (
-        // Lock icon — communicates WHY it's disabled
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
@@ -286,19 +279,20 @@ const ALL_STATUSES = ["All", "PENDING", "APPROVED", "DISAPPROVED", "CANCELLED"];
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function AdminRequestStatus() {
-  const [data, setData]                   = useState([]);
-  const [drivers, setDrivers]             = useState([]);
-  const [vehicles, setVehicles]           = useState([]);
-  const [search, setSearch]               = useState("");
-  const [statusFilter, setStatusFilter]   = useState("All");
-  const [loading, setLoading]             = useState(true);
-  const [modalState, setModalState]       = useState(null);
-  const [saving, setSaving]               = useState({});
-  const [selected, setSelected]           = useState(new Set());
-  const [sortCol, setSortCol]             = useState("date_of_travel");
-  const [sortDir, setSortDir]             = useState("desc");
-  const [deleting, setDeleting]           = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [data, setData]                       = useState([]);
+  const [drivers, setDrivers]                 = useState([]);
+  const [vehicles, setVehicles]               = useState([]);
+  const [search, setSearch]                   = useState("");
+  const [statusFilter, setStatusFilter]       = useState("All");
+  const [loading, setLoading]                 = useState(true);
+  const [modalState, setModalState]           = useState(null);
+  const [saving, setSaving]                   = useState({});
+  const [selected, setSelected]               = useState(new Set());
+  const [sortCol, setSortCol]                 = useState("date_of_travel");
+  const [sortDir, setSortDir]                 = useState("desc");
+  const [deleting, setDeleting]               = useState(false);
+  const [deleteConfirm, setDeleteConfirm]     = useState(false);
+  const [generatingTicket, setGeneratingTicket] = useState(false); // ← moved inside
 
   const fetchAll = async () => {
     setLoading(true);
@@ -379,29 +373,28 @@ export default function AdminRequestStatus() {
     if (selected.size === 0) return;
     setDeleteConfirm(true);
   };
+
   const handleGenerateTripTickets = async () => {
-  if (selected.size === 0) return;
- 
-  const driversMap  = Object.fromEntries(drivers.map((d) => [d.id, d.label]));
-  const vehiclesMap = Object.fromEntries(vehicles.map((v) => [v.id, v.label]));
-  const selectedRequests = data.filter((r) => selected.has(r.id));
- 
-  setGeneratingTicket(true);
-  try {
-    await generateTripTicket(
-      selectedRequests,
-      driversMap,
-      vehiclesMap,
-      TEMPLATE_URL,
-      { oneFilePerRequest: selected.size === 1 }
-    );
-  } catch (err) {
-    console.error("Trip ticket generation failed:", err);
-    alert("Failed to generate trip ticket.\nCheck console for details.");
-  } finally {
-    setGeneratingTicket(false);
-  }
-};
+    if (selected.size === 0) return;
+    const driversMap  = Object.fromEntries(drivers.map((d) => [d.id, d.label]));
+    const vehiclesMap = Object.fromEntries(vehicles.map((v) => [v.id, v.label]));
+    const selectedRequests = data.filter((r) => selected.has(r.id));
+    setGeneratingTicket(true);
+    try {
+      await generateTripTicket(
+        selectedRequests,
+        driversMap,
+        vehiclesMap,
+        TEMPLATE_URL,
+        { oneFilePerRequest: selected.size === 1 }
+      );
+    } catch (err) {
+      console.error("Trip ticket generation failed:", err);
+      alert("Failed to generate trip ticket.\nCheck console for details.");
+    } finally {
+      setGeneratingTicket(false);
+    }
+  };
 
   const confirmDelete = async () => {
     const ids = [...selected];
@@ -488,7 +481,6 @@ export default function AdminRequestStatus() {
           <h1 className="text-xl font-bold text-slate-800">Travel Requests</h1>
         </div>
 
-        {/* Status pills — now includes CANCELLED */}
         <div className="flex gap-2 flex-wrap">
           {ALL_STATUSES.slice(1).map((s) => {
             const cfg    = getStatusCfg(s);
@@ -563,32 +555,33 @@ export default function AdminRequestStatus() {
 
           <div className="ml-auto flex items-center gap-2">
             {selected.size > 0 && (
-            <>
-              <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200">
-                {selected.size} selected
-              </span>
- 
-              {/* ── Trip Ticket button ── */}
-              <button
-                onClick={handleGenerateTripTickets}
-                disabled={generatingTicket}
-                title="Generate Driver's Trip Ticket (.xlsx)"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 border border-sky-200 rounded-lg text-xs font-medium text-sky-600 hover:bg-sky-100 transition disabled:opacity-50"
-              >
-                {generatingTicket ? (
-                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                  </svg>
-                ) : (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
-                  </svg>
-                )}
-                Trip Ticket{selected.size > 1 ? "s" : ""}
-              </button>
-              
+              <>
+                <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200">
+                  {selected.size} selected
+                </span>
+
+                {/* ── Trip Ticket button ── */}
+                <button
+                  onClick={handleGenerateTripTickets}
+                  disabled={generatingTicket}
+                  title="Generate Driver's Trip Ticket (.xlsx)"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 border border-sky-200 rounded-lg text-xs font-medium text-sky-600 hover:bg-sky-100 transition disabled:opacity-50"
+                >
+                  {generatingTicket ? (
+                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" />
+                    </svg>
+                  )}
+                  Trip Ticket{selected.size > 1 ? "s" : ""}
+                </button>
+
+                {/* ── Delete button ── */}
                 <button
                   onClick={handleBulkDelete}
                   disabled={deleting}
@@ -698,7 +691,7 @@ export default function AdminRequestStatus() {
                       key={item.id}
                       className={`transition-colors ${
                         isCancelled
-                          ? "opacity-60"           // dim the whole row
+                          ? "opacity-60"
                           : isDisapproved
                           ? "bg-red-50/50 hover:bg-red-50 border-l-2 border-l-red-300"
                           : isSelected
