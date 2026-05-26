@@ -22,24 +22,24 @@ import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 // Calibrated by visual inspection of the PDF layout.
 //
 const COORDS = {
-  date:        { x: 110, y: 657 },   // Section A - Date:
-  plateNo:     { x: 390, y: 657 },   // Vehicle Plate No.:
-  driver:      { x: 110, y: 635 },   // Driver:
+  date:        { x: 90, y: 693  },   // Section A - Date:
+  plateNo:     { x: 430, y: 696 },   // Vehicle Plate No.:
+  driver:      { x: 90, y: 678  },   // Driver:
   // Authorized Passengers 1–8 (rows spaced ~18pt apart)
   passengers: [
-    { x: 220, y: 608 },
-    { x: 220, y: 590 },
-    { x: 220, y: 572 },
-    { x: 220, y: 554 },
-    { x: 220, y: 536 },
-    { x: 220, y: 518 },
+    { x: 190, y: 650 },
+    { x: 190, y: 637 },
+    { x: 220, y: 630 },
+    { x: 220, y: 596 },
+    { x: 220, y: 578 },
+    { x: 220, y: 560 },
     { x: 220, y: 500 },
     { x: 220, y: 482 },
   ],
-  destination: { x: 130, y: 460 },   // Destination:
-  purpose:     { x: 130, y: 442 },   // Purpose of Travel:
-  dateBottom:  { x: 110, y: 108 },   // Date: at bottom (Section C)
-  driverCert:  { x: 350, y: 90  },   // Certified True and Correct:
+  destination: { x: 180, y: 540 },   // Destination:
+  purpose:     { x: 180, y: 525 },   // Purpose of Travel:
+  dateBottom:  { x: 90, y: 128 },   // Date: at bottom (Section C)
+  driverCert:  { x: 450, y: 110 },   // Certified True and Correct:
 };
 
 const FONT_SIZE = 9;
