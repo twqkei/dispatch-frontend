@@ -28,6 +28,83 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// ─── Ref Verify Modal ─────────────────────────────────────────────────────────
+function RefVerifyModal({ onConfirm, onCancel }) {
+  const [input, setInput] = useState("");
+  const [error, setError] = useState(false);
+
+  const handleSubmit = () => {
+    const normalized = input.trim().toUpperCase();
+    onConfirm(normalized, (matched) => {
+      if (!matched) {
+        setError(true);
+        setInput("");
+      }
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6">
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-slate-800">Verify Your Reference Number</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Enter the reference number from your request confirmation to view details.</p>
+          </div>
+        </div>
+
+        {/* Input */}
+        <input
+          autoFocus
+          type="text"
+          placeholder="e.g. VR-0001"
+          value={input}
+          onChange={(e) => { setInput(e.target.value); setError(false); }}
+          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+          className={`w-full px-4 py-2.5 text-sm rounded-xl border focus:outline-none focus:ring-2 placeholder-slate-400 font-mono tracking-wide transition
+            ${error
+              ? "border-red-300 bg-red-50 text-red-700 focus:ring-red-200"
+              : "border-slate-200 bg-slate-50 text-slate-800 focus:ring-emerald-200 focus:border-emerald-300"
+            }`}
+        />
+
+        {/* Error message */}
+        {error && (
+          <p className="text-xs text-red-500 mt-2 flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            Reference number not found. Please check and try again.
+          </p>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-2 mt-5">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 rounded-xl text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white transition"
+          >
+            Verify
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Topbar ───────────────────────────────────────────────────────────────────
 function Topbar() {
   return (
@@ -74,18 +151,18 @@ function Topbar() {
 const ALL_STATUSES = ["All", "PENDING", "APPROVED", "DISAPPROVED"];
 
 export default function RequestStatus() {
-  const [data, setData]               = useState([]);
-  const [drivers, setDrivers]         = useState([]);
-  const [vehicles, setVehicles]       = useState([]);
-  const [search, setSearch]           = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [loading, setLoading]         = useState(true);
+  const [data, setData]                   = useState([]);
+  const [drivers, setDrivers]             = useState([]);
+  const [vehicles, setVehicles]           = useState([]);
+  const [search, setSearch]               = useState("");
+  const [statusFilter, setStatusFilter]   = useState("All");
+  const [loading, setLoading]             = useState(true);
   const [viewingRequest, setViewingRequest] = useState(null);
+  const [verifyTarget, setVerifyTarget]   = useState(null); // request pending verification
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch requests + drivers + vehicles so we can resolve names
       const [requests, driverList, vehicleList] = await Promise.all([
         apiFetch("/requests/"),
         apiFetch("/drivers/"),
@@ -113,7 +190,6 @@ export default function RequestStatus() {
     return matchesSearch && matchesStatus;
   });
 
-  // ── KEY FIX: include driver, vehicle, and adminRemarks ──────────────────────
   const buildRequest = (item) => ({
     id:             item.id,
     referenceNo:    `VR-${String(item.id).padStart(4, "0")}`,
@@ -135,11 +211,25 @@ export default function RequestStatus() {
     passengerNames: item.passenger_names,
     projectBased:   item.project_based ? "Yes" : "No",
     fundingType:    item.funding_type,
-    // ↓ These three were missing before
     driver:         drivers.find((d) => d.id === item.driver)?.label || "—",
     vehicle:        vehicles.find((v) => v.id === item.vehicle)?.label || "—",
     adminRemarks:   item.admin_remarks || "",
   });
+
+  // Called when user clicks "View" — opens the ref verify prompt
+  const handleViewClick = (item) => {
+    setVerifyTarget(buildRequest(item));
+  };
+
+  // Called when user submits a ref number in the verify modal
+  const handleVerifyConfirm = (entered, callback) => {
+    if (entered === verifyTarget.referenceNo) {
+      setViewingRequest(verifyTarget);
+      setVerifyTarget(null);
+    } else {
+      callback(false); // triggers error state inside modal
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -147,11 +237,19 @@ export default function RequestStatus() {
 
       <div className="flex-1 p-6">
 
+        {/* ── Ref verify prompt ── */}
+        {verifyTarget && (
+          <RefVerifyModal
+            onConfirm={handleVerifyConfirm}
+            onCancel={() => setVerifyTarget(null)}
+          />
+        )}
+
+        {/* ── Request details modal ── */}
         {viewingRequest && (
           <ViewRequestModal
             request={viewingRequest}
             onClose={() => setViewingRequest(null)}
-            // not admin — read-only view, no edit panel
             isAdmin={false}
           />
         )}
@@ -172,7 +270,6 @@ export default function RequestStatus() {
               Refresh
             </button>
           </div>
-
         </div>
 
         {/* ── Table card ── */}
@@ -210,7 +307,7 @@ export default function RequestStatus() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  {["Ref #", "Date of Request", "Name", "Date of Travel", "Destination", "Purpose", "Status", "Details"].map((h) => (
+                  {["#", "Date of Request", "Name", "Date of Travel", "Destination", "Purpose", "Status", "Details"].map((h) => (
                     <th key={h} className="text-left px-4 py-3 bg-slate-50/60 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -236,9 +333,9 @@ export default function RequestStatus() {
                   filteredData.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
 
-                      {/* Ref # */}
-                      <td className="px-4 py-3 font-mono text-emerald-600 font-semibold text-[11px]">
-                        VR-{String(item.id).padStart(4, "0")}
+                      {/* Row number — ref number intentionally hidden for security */}
+                      <td className="px-4 py-3 text-slate-400 font-medium text-center w-10">
+                        {index + 1}
                       </td>
 
                       {/* Date of Request */}
@@ -275,10 +372,10 @@ export default function RequestStatus() {
                         <StatusBadge status={item.status} />
                       </td>
 
-                      {/* View button */}
+                      {/* View button — triggers ref verify prompt */}
                       <td className="px-4 py-3">
                         <button
-                          onClick={() => setViewingRequest(buildRequest(item))}
+                          onClick={() => handleViewClick(item)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 text-slate-600 transition whitespace-nowrap"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
