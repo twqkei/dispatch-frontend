@@ -44,7 +44,7 @@ export default function Landing() {
           Davao del Norte State College
         </p>
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 tracking-tight mb-3">
-          Motor Pool Services
+          Motor Pool Services Unit
         </h1>
         <p className="text-sm text-slate-400 max-w-sm mb-10 leading-relaxed">
           Request a vehicle for official travel. Submit your trip details and track your request status online.
@@ -68,14 +68,14 @@ export default function Landing() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            Track My Request
+            Track Vehicle Availability
           </Link>
         </div>
       </div>
 
       {/* Footer */}
       <footer className="border-t border-slate-100 py-4 px-8 text-center">
-        <p className="text-[11px] text-slate-300">DNSC Motorpool System · For concerns, contact the Motorpool Office</p>
+        <p className="text-[11px] text-slate-300">DNSC Motorpool System · For concerns, contact the Motorpool Office Unit</p>
       </footer>
 
     </div>
