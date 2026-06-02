@@ -5,7 +5,7 @@ import { validateStep1, validateStep2 } from "../utils/validators";
 
 import Topbar from "../components/layout/topbar";
 import StepBar from "../components/layout/stepbar";
-import DataPrivacyStep from "./components/requests/dataprivacy";
+import DataPrivacyStep from "../components/requests/dataprivacy";
 import StepOne from "../components/requests/StepOne";
 import StepTwo from "../components/requests/StepTwo";
 import SuccessScreen from "../components/requests/SuccessScreen";
