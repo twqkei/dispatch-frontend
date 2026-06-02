@@ -1,10 +1,11 @@
-import { useState } from "react";
+  import { useState } from "react";
 import { apiFetch } from "../api";
 
 import { validateStep1, validateStep2 } from "../utils/validators";
 
 import Topbar from "../components/layout/topbar";
 import StepBar from "../components/layout/stepbar";
+import DataPrivacyStep from "./steps/dataprivacy";
 import StepOne from "../components/requests/StepOne";
 import StepTwo from "../components/requests/StepTwo";
 import SuccessScreen from "../components/requests/SuccessScreen";
@@ -20,17 +21,18 @@ const initialForm = {
 // ─── RequestPage ──────────────────────────────────────────────────────────────
 /**
  * RequestPage
- * Orchestrates the two-step vehicle request form.
+ * Orchestrates the multi-step vehicle request form.
+ * Step 0 = Data Privacy, Step 1 = Requester & Travel Info, Step 2 = Passengers & Submit.
  * All state lives here; child step components are purely presentational.
  */
 export default function RequestPage() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // 0 = privacy, 1 = step one, 2 = step two
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────────────────
 
   /** Update a single form field and clear its error. */
   const set = (key, val) => {
@@ -45,11 +47,11 @@ export default function RequestPage() {
   };
 
   const next = () => { if (validateStep()) setStep(2); };
-  const back = () => { setErrors({}); setStep(1); };
+  const back = () => { setErrors({}); setStep(step === 2 ? 1 : 0); };
 
-  const reset = () => { setSubmitted(false); setStep(1); setForm(initialForm); };
+  const reset = () => { setSubmitted(false); setStep(0); setForm(initialForm); };
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
+  // ── Submit ────────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!validateStep()) return;
     setSubmitting(true);
@@ -94,7 +96,9 @@ export default function RequestPage() {
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
+
+  // Success screen after submission
   if (submitted) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -104,6 +108,24 @@ export default function RequestPage() {
     );
   }
 
+  // Data privacy screen — no StepBar shown
+  if (step === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <Topbar />
+        <main className="flex-1 overflow-y-auto px-6 md:px-10 py-8">
+          <DataPrivacyStep onAgree={() => setStep(1)} />
+        </main>
+        <footer className="border-t border-slate-100 py-3 px-8 shrink-0">
+          <p className="text-[11px] text-slate-300">
+            DNSC Motorpool System · For concerns, contact the Motorpool Office
+          </p>
+        </footer>
+      </div>
+    );
+  }
+
+  // Step 1 & 2 — with StepBar
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Topbar />
