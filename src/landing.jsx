@@ -13,7 +13,7 @@ export default function Landing() {
             </svg>
           </div>
           <div className="leading-tight">
-            <p className="text-sm font-bold text-slate-800">Motor Pool Services Unit</p>
+            <p className="text-sm font-bold text-slate-800">Vehicle Requisitioning System</p>
             <p className="text-[10px] text-slate-400 hidden sm:block">Davao del Norte State College</p>
           </div>
         </div>
