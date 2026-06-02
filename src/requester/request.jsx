@@ -108,21 +108,21 @@ export default function RequestPage() {
     );
   }
 
-  // Data privacy screen — no StepBar shown
-  if (step === 0) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        <Topbar />
-        <main className="flex-1 overflow-y-auto px-6 md:px-10 py-8">
-          <DataPrivacyStep onAgree={() => setStep(1)} />
-        </main>
-        <footer className="border-t border-slate-100 py-3 px-8 shrink-0">
-          <p className="text-[11px] text-slate-300">
-            DNSC Motorpool System · For concerns, contact the Motorpool Office
-          </p>
-        </footer>
-      </div>
-    );
+  // // Data privacy screen — no StepBar shown
+  // if (step === 0) {
+  //   return (
+  //     <div className="min-h-screen bg-slate-50 flex flex-col">
+  //       <Topbar />
+  //       <main className="flex-1 overflow-y-auto px-6 md:px-10 py-8">
+  //         <DataPrivacyStep onAgree={() => setStep(1)} />
+  //       </main>
+  //       <footer className="border-t border-slate-100 py-3 px-8 shrink-0">
+  //         <p className="text-[11px] text-slate-300">
+  //           DNSC Motorpool System · For concerns, contact the Motorpool Office
+  //         </p>
+  // //       </footer>
+  //     </div>
+  //   );
   }
 
   // Step 1 & 2 — with StepBar
