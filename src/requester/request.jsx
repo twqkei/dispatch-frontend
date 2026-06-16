@@ -1,11 +1,11 @@
-  import { useState } from "react";
+import { useState } from "react";
 import { apiFetch } from "../api";
 
 import { validateStep1, validateStep2 } from "../utils/validators";
 
 import Topbar from "../components/layout/topbar";
 import StepBar from "../components/layout/stepbar";
-// import DataPrivacyStep from "../components/requests/dataprivacy";
+import DataPrivacyStep from "../components/requests/dataprivacy";
 import StepOne from "../components/requests/StepOne";
 import StepTwo from "../components/requests/StepTwo";
 import SuccessScreen from "../components/requests/SuccessScreen";
@@ -19,12 +19,6 @@ const initialForm = {
 };
 
 // ─── RequestPage ──────────────────────────────────────────────────────────────
-/**
- * RequestPage
- * Orchestrates the multi-step vehicle request form.
- * Step 0 = Data Privacy, Step 1 = Requester & Travel Info, Step 2 = Passengers & Submit.
- * All state lives here; child step components are purely presentational.
- */
 export default function RequestPage() {
   const [step, setStep] = useState(0); // 0 = privacy, 1 = step one, 2 = step two
   const [form, setForm] = useState(initialForm);
@@ -34,7 +28,6 @@ export default function RequestPage() {
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
-  /** Update a single form field and clear its error. */
   const set = (key, val) => {
     setForm((f) => ({ ...f, [key]: val }));
     setErrors((e) => { const next = { ...e }; delete next[key]; return next; });
@@ -98,7 +91,7 @@ export default function RequestPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
-  // Success screen after submission
+  // Success screen
   if (submitted) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -108,21 +101,21 @@ export default function RequestPage() {
     );
   }
 
-  // // Data privacy screen — no StepBar shown
-  // if (step === 0) {
-  //   return (
-  //     <div className="min-h-screen bg-slate-50 flex flex-col">
-  //       <Topbar />
-  //       <main className="flex-1 overflow-y-auto px-6 md:px-10 py-8">
-  //         <DataPrivacyStep onAgree={() => setStep(1)} />
-  //       </main>
-  //       <footer className="border-t border-slate-100 py-3 px-8 shrink-0">
-  //         <p className="text-[11px] text-slate-300">
-  //           DNSC Motorpool System · For concerns, contact the Motorpool Office
-  //         </p>
-  // //       </footer>
-  //     </div>
-  //   );
+  // Data privacy screen — no StepBar shown
+  if (step === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <Topbar />
+        <main className="flex-1 overflow-y-auto px-6 md:px-10 py-8">
+          <DataPrivacyStep onAgree={() => setStep(1)} />
+        </main>
+        <footer className="border-t border-slate-100 py-3 px-8 shrink-0">
+          <p className="text-[11px] text-slate-300">
+            DNSC Motorpool System · For concerns, contact the Motorpool Office
+          </p>
+        </footer>
+      </div>
+    );
   }
 
   // Step 1 & 2 — with StepBar

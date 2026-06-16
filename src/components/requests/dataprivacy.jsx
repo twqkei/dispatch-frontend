@@ -6,9 +6,7 @@
  */
 export default function DataPrivacyStep({ onAgree }) {
   return (
-    <div className="max-w-2xl mx-auto">
-
-      {/* Shield icon */}
+    <div className="max-w-4xl mx-auto">
       <div className="flex flex-col items-center text-center mb-8">
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Data Privacy Statement</h1>
         <p className="text-sm text-slate-400 mt-2 max-w-md">
@@ -19,9 +17,9 @@ export default function DataPrivacyStep({ onAgree }) {
       {/* Card */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
-        {/* Blue top banner */}
-        <div className="bg-blue-600 px-6 py-4">
-          <p className="text-xs font-semibold text-blue-100 uppercase tracking-widest mb-1">
+        {/* Green top banner */}
+        <div className="bg-emerald-500 px-6 py-4">
+          <p className="text-xs font-semibold text-green-100 uppercase tracking-widest mb-1">
             Motor Pool Services Unit · Davao del Norte State College
           </p>
           <p className="text-sm text-white leading-relaxed">

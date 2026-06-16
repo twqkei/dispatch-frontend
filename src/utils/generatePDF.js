@@ -11,7 +11,8 @@ export function generateVehicleRequestPDF(src, status) {
   const content = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
 <title>Vehicle Request – ${src.name || "Request"}</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}@page{size:A4;margin:24mm 20mm}
+  *{box-sizing:border-box;margin:0;padding:0}
+  @page{size:8.5in 13in;margin:20mm 20mm}
   body{font-family:'Segoe UI',Arial,sans-serif;color:#1e293b;background:white;font-size:12px}
   .header{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #3b82f6;margin-bottom:20px}
   .header-left h1{font-size:18px;font-weight:700;color:#1d4ed8;margin-bottom:2px}

@@ -1,26 +1,33 @@
 import { Field, TripDurationBadge, DangerAlert, inputCls, chipBtn } from "../ui/FormHelpers";
 import { countPassengerNames } from "../../utils/validators";
 
-/**
- * StepTwo
- * Renders the "Passengers & Confirmation" form (Step 2).
- *
- * @param {object}   form        - Current form state from RequestPage
- * @param {object}   errors      - Validation error map from RequestPage
- * @param {Function} set         - (key, value) setter from RequestPage
- * @param {Function} onSubmit    - Called when the Submit button is clicked
- * @param {boolean}  submitting  - Disables submit button when true
- */
 export default function StepTwo({ form, errors, set, onSubmit, submitting }) {
+
+  const formatPHT = (timeStr) => {
+    if (!timeStr) return "—";
+    try {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes, 0);
+      return date.toLocaleTimeString("en-PH", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Manila",
+      });
+    } catch {
+      return timeStr;
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Heading */}
       <div className="mb-6">
         <p className="text-xs font-semibold text-emerald-500 uppercase tracking-widest mb-1">
           Step 2 of 2
         </p>
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-          Passengers & Confirmation
+          Passengers &amp; Confirmation
         </h1>
         <p className="text-sm text-slate-400 mt-1">
           List who's coming and review your request before submitting.
@@ -112,27 +119,32 @@ export default function StepTwo({ form, errors, set, onSubmit, submitting }) {
             />
           </Field>
 
-          {/* Attachment reminder */}
-          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex gap-3">
-            <span className="text-base leading-none shrink-0">📎</span>
-            <div className="text-xs text-blue-800 leading-relaxed">
-              <span className="font-semibold block mb-0.5">Have attachments?</span>
-              If you have supporting documents (authorization letters, itineraries, etc.), please
-              upload them to our shared folder and include your name and travel date in the filename
-              so we can match them to your request.{" "}
-              <a
-                href="https://drive.google.com/drive/folders/12ZfJ337ToBpRh7jmZSGv6QLctv2zF929?usp=sharing"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 font-semibold text-blue-600 underline underline-offset-2 hover:text-blue-800 transition"
-              >
-                Upload here
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          {/* ── Google Drive attachment input ── */}
+          <Field
+            label="Supporting Documents"
+            hint="Paste your Google Drive file or folder link"
+            error={errors.attachmentLink}
+          >
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <svg className="w-4 h-4 text-slate-400" viewBox="0 0 87.3 78" fill="currentColor">
+                  <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                  <path d="M43.65 25L29.9 1.2C28.55.4 27 0 25.45 0c-1.55 0-3.1.4-4.5 1.2L6.6 25z" fill="#00ac47"/>
+                  <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.8l5.65 10.35z" fill="#ea4335"/>
+                  <path d="M43.65 25L57.4 1.2C56 .4 54.45 0 52.9 0H34.4c-1.55 0-3.1.4-4.5 1.2z" fill="#00832d"/>
+                  <path d="M59.8 53H27.5L13.75 76.8c1.4.8 2.95 1.2 4.5 1.2h50.8c1.55 0 3.1-.4 4.5-1.2z" fill="#2684fc"/>
+                  <path d="M73.4 26.5l-13.75-23.8c-1.35-.8-2.9-1.2-4.45-1.2h-.35L43.65 25l16.15 28H87.3c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
                 </svg>
-              </a>
+              </div>
+              <input
+                type="url"
+                className={inputCls(errors.attachmentLink) + " pl-9"}
+                placeholder="https://drive.google.com/..."
+                value={form.attachmentLink || ""}
+                onChange={(e) => set("attachmentLink", e.target.value)}
+              />
             </div>
-          </div>
+          </Field>
         </div>
 
         {/* ── Right: Review + Acknowledge ── */}
@@ -160,8 +172,8 @@ export default function StepTwo({ form, errors, set, onSubmit, submitting }) {
                 ["Date of Return", form.dateReturned],
                 ["Destination",    form.destination],
                 ["Waiting Area",   form.waitingArea],
-                ["Departure",      form.departureTime],
-                ["Return Time",    form.expectedReturn],
+                ["Departure",      formatPHT(form.departureTime)],
+                ["Return Time",    formatPHT(form.expectedReturn)],
                 ["Passengers",     form.numPassengers],
                 ["Notes",          form.notes],
                 ["Project Based",  form.projectBased],
@@ -211,8 +223,7 @@ export default function StepTwo({ form, errors, set, onSubmit, submitting }) {
               <span className="text-xs text-slate-600 leading-relaxed">
                 <span className="font-semibold text-slate-700">Acknowledgement *</span>
                 <br />
-                I certify that the information provided is accurate and I understand that vehicle
-                availability is subject to approval.
+                {"I certify that the information provided is accurate and I understand that vehicle availability is subject to approval."}
               </span>
             </label>
             {errors.acknowledgement && (
@@ -234,14 +245,14 @@ export default function StepTwo({ form, errors, set, onSubmit, submitting }) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                 </svg>
-                Submitting…
+                {"Submitting…"}
               </>
             ) : (
               <>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                Submit Request
+                {"Submit Request"}
               </>
             )}
           </button>
