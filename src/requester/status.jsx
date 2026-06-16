@@ -64,7 +64,7 @@ function RefVerifyModal({ onConfirm, onCancel }) {
         <input
           autoFocus
           type="text"
-          placeholder="e.g. VR-0001"
+          placeholder="e.g. REQ-AB12CD34"
           value={input}
           onChange={(e) => { setInput(e.target.value); setError(false); }}
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -151,14 +151,14 @@ function Topbar() {
 const ALL_STATUSES = ["All", "PENDING", "APPROVED", "DISAPPROVED"];
 
 export default function RequestStatus() {
-  const [data, setData]                   = useState([]);
-  const [drivers, setDrivers]             = useState([]);
-  const [vehicles, setVehicles]           = useState([]);
-  const [search, setSearch]               = useState("");
-  const [statusFilter, setStatusFilter]   = useState("All");
-  const [loading, setLoading]             = useState(true);
+  const [data, setData]                     = useState([]);
+  const [drivers, setDrivers]               = useState([]);
+  const [vehicles, setVehicles]             = useState([]);
+  const [search, setSearch]                 = useState("");
+  const [statusFilter, setStatusFilter]     = useState("All");
+  const [loading, setLoading]               = useState(true);
   const [viewingRequest, setViewingRequest] = useState(null);
-  const [verifyTarget, setVerifyTarget]   = useState(null); // request pending verification
+  const [verifyTarget, setVerifyTarget]     = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -192,7 +192,7 @@ export default function RequestStatus() {
 
   const buildRequest = (item) => ({
     id:             item.id,
-    referenceNo:    `VR-${String(item.id).padStart(4, "0")}`,
+    referenceNo:    item.reference_number || "—",
     status:         item.status,
     timestamp:      item.created_at,
     email:          item.email,
@@ -216,18 +216,16 @@ export default function RequestStatus() {
     adminRemarks:   item.admin_remarks || "",
   });
 
-  // Called when user clicks "View" — opens the ref verify prompt
   const handleViewClick = (item) => {
     setVerifyTarget(buildRequest(item));
   };
 
-  // Called when user submits a ref number in the verify modal
   const handleVerifyConfirm = (entered, callback) => {
     if (entered === verifyTarget.referenceNo) {
       setViewingRequest(verifyTarget);
       setVerifyTarget(null);
     } else {
-      callback(false); // triggers error state inside modal
+      callback(false);
     }
   };
 
@@ -237,7 +235,6 @@ export default function RequestStatus() {
 
       <div className="flex-1 p-6">
 
-        {/* ── Ref verify prompt ── */}
         {verifyTarget && (
           <RefVerifyModal
             onConfirm={handleVerifyConfirm}
@@ -245,7 +242,6 @@ export default function RequestStatus() {
           />
         )}
 
-        {/* ── Request details modal ── */}
         {viewingRequest && (
           <ViewRequestModal
             request={viewingRequest}
@@ -254,7 +250,7 @@ export default function RequestStatus() {
           />
         )}
 
-        {/* ── Page header ── */}
+        {/* Page header */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
@@ -272,7 +268,7 @@ export default function RequestStatus() {
           </div>
         </div>
 
-        {/* ── Table card ── */}
+        {/* Table card */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
 
           {/* Toolbar */}
@@ -333,7 +329,7 @@ export default function RequestStatus() {
                   filteredData.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
 
-                      {/* Row number — ref number intentionally hidden for security */}
+                      {/* Row number — ref number hidden for privacy */}
                       <td className="px-4 py-3 text-slate-400 font-medium text-center w-10">
                         {index + 1}
                       </td>

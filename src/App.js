@@ -1,4 +1,4 @@
-import { Routes, Route, NavLink, useLocation } from "react-router-dom";
+import { Routes, Route, NavLink, useLocation, Navigate } from "react-router-dom";
 import Home from "./home";
 import Logs from "./logs";
 import Drivers from "./drivers";
@@ -11,16 +11,21 @@ import RequestStatus from "./requester/status";
 import RequestPage from "./requester/request";
 import Landing from "./landing";
 
+// ─── Private Route Guard ───────────────────────────────────────────────────────
+function PrivateRoute({ children }) {
+  const token = localStorage.getItem("access");
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
+}
+
 function App() {
   const location = useLocation();
 
-  // Hide topbar on login page
-const hideTopbar =
-  location.pathname === "/" ||
-  location.pathname === "/status" ||
-  location.pathname === "/login" ||
-  location.pathname === "/request" ;
-
+  const hideTopbar =
+    location.pathname === "/" ||
+    location.pathname === "/status" ||
+    location.pathname === "/login" ||
+    location.pathname === "/request";
 
   return (
     <div className="app-container">
@@ -33,43 +38,18 @@ const hideTopbar =
           </div>
 
           <nav className="pill-nav" aria-label="Primary">
-
-            <NavLink
-              to="/home"
-              className={({ isActive }) =>
-                `pill ${isActive ? "active home" : ""}`
-              }
-            >
+            <NavLink to="/home" className={({ isActive }) => `pill ${isActive ? "active home" : ""}`}>
               Home
             </NavLink>
-
-            <NavLink
-              to="/logs"
-              className={({ isActive }) =>
-                `pill ${isActive ? "active logs" : ""}`
-              }
-            >
+            <NavLink to="/logs" className={({ isActive }) => `pill ${isActive ? "active logs" : ""}`}>
               Logs
             </NavLink>
-
-            <NavLink
-              to="/drivers"
-              className={({ isActive }) =>
-                `pill ${isActive ? "active drivers" : ""}`
-              }
-            >
-              Drivers
+            <NavLink to="/drivers" className={({ isActive }) => `pill ${isActive ? "active drivers" : ""}`}>
+              Resources
             </NavLink>
-
-            <NavLink
-              to="/requeststatus"
-              className={({ isActive }) =>
-                `pill ${isActive ? "active status" : ""}`
-              }
-            >
+            <NavLink to="/requeststatus" className={({ isActive }) => `pill ${isActive ? "active status" : ""}`}>
               Request Status
             </NavLink>
-
           </nav>
 
           <Logout />
@@ -79,15 +59,18 @@ const hideTopbar =
       {/* Main content */}
       <main className="main-content">
         <Routes>
+          {/* ── Public routes ── */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/home" element={<Home />} />
           <Route path="/status" element={<RequestStatus />} />
-          <Route path="/logs" element={<Logs />} />
-          <Route path="/drivers" element={<Drivers />} />
-          <Route path="/requeststatus" element={<Status />} />
-          <Route path="/trips/:date" element={<Trips />} />
           <Route path="/request" element={<RequestPage />} />
+
+          {/* ── Admin-only routes ── */}
+          <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+          <Route path="/logs" element={<PrivateRoute><Logs /></PrivateRoute>} />
+          <Route path="/drivers" element={<PrivateRoute><Drivers /></PrivateRoute>} />
+          <Route path="/requeststatus" element={<PrivateRoute><Status /></PrivateRoute>} />
+          <Route path="/trips/:date" element={<PrivateRoute><Trips /></PrivateRoute>} />
         </Routes>
       </main>
 

@@ -20,11 +20,12 @@ const initialForm = {
 
 // ─── RequestPage ──────────────────────────────────────────────────────────────
 export default function RequestPage() {
-  const [step, setStep] = useState(0); // 0 = privacy, 1 = step one, 2 = step two
+  const [step, setStep] = useState(0);
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
+  const [referenceNumber, setReferenceNumber] = useState("");
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -42,14 +43,14 @@ export default function RequestPage() {
   const next = () => { if (validateStep()) setStep(2); };
   const back = () => { setErrors({}); setStep(step === 2 ? 1 : 0); };
 
-  const reset = () => { setSubmitted(false); setStep(0); setForm(initialForm); };
+  const reset = () => { setSubmitted(false); setStep(0); setForm(initialForm); setReferenceNumber(""); };
 
   // ── Submit ────────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!validateStep()) return;
     setSubmitting(true);
     try {
-      await apiFetch(
+      const data = await apiFetch(
         "/requests/",
         {
           method: "POST",
@@ -80,6 +81,7 @@ export default function RequestPage() {
         },
         { auth: false }
       );
+      setReferenceNumber(data?.reference_number || "");
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -96,12 +98,12 @@ export default function RequestPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
         <Topbar />
-        <SuccessScreen onReset={reset} />
+        <SuccessScreen onReset={reset} referenceNumber={referenceNumber} />
       </div>
     );
   }
 
-  // Data privacy screen — no StepBar shown
+  // Data privacy screen
   if (step === 0) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -118,7 +120,7 @@ export default function RequestPage() {
     );
   }
 
-  // Step 1 & 2 — with StepBar
+  // Step 1 & 2
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Topbar />

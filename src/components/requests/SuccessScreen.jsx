@@ -1,12 +1,6 @@
 import { Link } from "react-router-dom";
 
-/**
- * SuccessScreen
- * Full-page confirmation shown after a request is successfully submitted.
- *
- * @param {Function} onReset - Called when "Submit Another Request" is clicked
- */
-export default function SuccessScreen({ onReset }) {
+export default function SuccessScreen({ onReset, referenceNumber }) {
   return (
     <div className="flex-1 flex items-center justify-center p-10">
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 w-full max-w-md p-10 text-center">
@@ -28,9 +22,20 @@ export default function SuccessScreen({ onReset }) {
           Your request is{" "}
           <span className="font-semibold text-amber-600">pending admin approval</span>.
         </p>
-        <p className="text-xs text-slate-400 mb-6">
+        <p className="text-xs text-slate-400 mb-4">
           Once approved, your trip will be automatically added to the schedule.
         </p>
+
+        {/* Reference Number Box */}
+        {referenceNumber && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-5">
+            <p className="text-xs text-slate-500 mb-1">Your Reference Number</p>
+            <p className="text-xl font-bold text-emerald-600 tracking-widest">{referenceNumber}</p>
+            <p className="text-xs text-slate-400 mt-1">
+              Use this to track your request status below.
+            </p>
+          </div>
+        )}
 
         {/* Quick links */}
         <div className="bg-slate-50 rounded-xl p-4 text-left mb-5 space-y-2.5 text-xs text-slate-500">

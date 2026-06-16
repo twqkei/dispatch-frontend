@@ -340,7 +340,7 @@ export default function AdminRequestStatus() {
 
   const buildRequest = (item) => ({
     id:             item.id,
-    referenceNo:    `VR-${String(item.id).padStart(4, "0")}`,
+    referenceNo:    item.reference_number || "—",
     status:         item.status,
     timestamp:      item.created_at,
     email:          item.email,
