@@ -2,9 +2,9 @@
 
 export const isValidMobile = (v) => /^\d{11}$/.test(v.replace(/[-\s]/g, ""));
 
-export const isValidEmail = (v) =>
-  v === "" || /^[^\s@]+@gmail\.com$/i.test(v.trim());
-
+const isValidEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
 export const countPassengerNames = (text) =>
   text
     .split("\n")
@@ -32,7 +32,7 @@ export const validateStep1 = (form) => {
   }
 
   if (form.email.trim() && !isValidEmail(form.email)) {
-    e.email = "Email must be a valid Gmail address ending in @gmail.com.";
+    e.email = "Please enter a valid email address.";
   }
 
   if (!form.dateOfTravel)  e.dateOfTravel  = "Date of travel is required.";
