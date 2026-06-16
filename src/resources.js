@@ -61,7 +61,7 @@ const AddDriverModal = ({ onClose, onSaved }) => {
       fd.append("name", form.name.trim());
       fd.append("phone_number", form.phone_number.trim());
       if (picture) fd.append("picture", picture);
-      const newDriver = await apiFetch("/drivers/", { method: "POST", body: fd, headers: {} });
+      const newDriver = await apiFetch("/drivers/", { method: "POST", body: fd});
       onSaved(newDriver);
       onClose();
     } catch (err) {

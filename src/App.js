@@ -1,7 +1,7 @@
 import { Routes, Route, NavLink, useLocation, Navigate } from "react-router-dom";
 import Home from "./home";
 import Logs from "./logs";
-import Drivers from "./drivers";
+import Drivers from "./resources";
 import Status from "./requeststatus";
 import Trips from "./trip";
 import "./App.css";
@@ -44,7 +44,7 @@ function App() {
             <NavLink to="/logs" className={({ isActive }) => `pill ${isActive ? "active logs" : ""}`}>
               Logs
             </NavLink>
-            <NavLink to="/drivers" className={({ isActive }) => `pill ${isActive ? "active drivers" : ""}`}>
+            <NavLink to="/resources" className={({ isActive }) => `pill ${isActive ? "active resources" : ""}`}>
               Resources
             </NavLink>
             <NavLink to="/requeststatus" className={({ isActive }) => `pill ${isActive ? "active status" : ""}`}>
@@ -68,7 +68,7 @@ function App() {
           {/* ── Admin-only routes ── */}
           <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
           <Route path="/logs" element={<PrivateRoute><Logs /></PrivateRoute>} />
-          <Route path="/drivers" element={<PrivateRoute><Drivers /></PrivateRoute>} />
+          <Route path="/resources" element={<PrivateRoute><Drivers /></PrivateRoute>} />
           <Route path="/requeststatus" element={<PrivateRoute><Status /></PrivateRoute>} />
           <Route path="/trips/:date" element={<PrivateRoute><Trips /></PrivateRoute>} />
         </Routes>

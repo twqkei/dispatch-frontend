@@ -4,8 +4,10 @@ const API_BASE =
     : "https://weircheveK.pythonanywhere.com/dispatch";
 
 export async function apiFetch(path, options = {}, { auth = true } = {}) {
+  const isFormData = options.body instanceof FormData;
+
   const headers = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers || {}),
   };
 
