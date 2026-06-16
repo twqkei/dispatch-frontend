@@ -111,7 +111,7 @@ export default function RequestPage() {
         </main>
         <footer className="border-t border-slate-100 py-3 px-8 shrink-0">
           <p className="text-[11px] text-slate-300">
-            DNSC Motorpool System · For concerns, contact the Motorpool Office
+            DNSC Motorpool System · For concerns, contact the Motorpool Office Unit
           </p>
         </footer>
       </div>
@@ -141,7 +141,7 @@ export default function RequestPage() {
 
       <footer className="border-t border-slate-100 py-3 px-8 shrink-0">
         <p className="text-[11px] text-slate-300">
-          DNSC Motorpool System · For concerns, contact the Motorpool Office
+          DNSC Motorpool System · For concerns, contact the Motorpool Office Unit
         </p>
       </footer>
     </div>
