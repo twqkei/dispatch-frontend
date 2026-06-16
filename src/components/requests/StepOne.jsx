@@ -39,10 +39,10 @@ export default function StepOne({ form, errors, set, onNext }) {
             <h2 className="text-sm font-bold text-slate-700">Requester Information</h2>
           </div>
 
-          <Field label="Email" error={errors.email} hint="Must be @gmail.com">
+          <Field label="Email" error={errors.email} hint="Must be @email.com">
             <input
               className={inputCls(errors.email)}
-              placeholder="your@gmail.com"
+              placeholder="your@email.com"
               value={form.email}
               onChange={(e) => set("email", e.target.value)}
             />
